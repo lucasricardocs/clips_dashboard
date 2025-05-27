@@ -250,8 +250,8 @@ def process_data(df_input):
     return df
 
 # --- Funções de Gráficos Interativos em Altair ---
-def create_enhanced_payment_pie_chart(df):
-    """Pie chart animado que surge do zero e gira até se completar."""
+def create_radial_plot(df):
+    """Cria um gráfico radial plot substituindo o gráfico de pizza."""
     if df.empty or not any(col in df.columns for col in ['Cartão', 'Dinheiro', 'Pix']):
         return None
     
@@ -264,85 +264,108 @@ def create_enhanced_payment_pie_chart(df):
     if payment_data.empty:
         return None
 
-    # Calcular ângulos para animação
-    payment_data['Percentual'] = payment_data['Valor'] / payment_data['Valor'].sum()
-    payment_data['Acumulado'] = payment_data['Percentual'].cumsum()
-    payment_data['StartAngle'] = 2 * np.pi * payment_data['Acumulado'].shift(fill_value=0)
-    payment_data['EndAngle'] = 2 * np.pi * payment_data['Acumulado']
-
-    # Criar frames de animação
-    frames = []
-    n_frames = 50
-    for i in range(1, n_frames + 1):
-        progress = i / n_frames
-        angle_limit = 2 * np.pi * progress
-        df_frame = payment_data.copy()
-        df_frame['CurrentEndAngle'] = np.minimum(df_frame['EndAngle'], angle_limit)
-        df_frame['CurrentStartAngle'] = np.minimum(df_frame['StartAngle'], angle_limit)
-        df_frame['CurrentValue'] = np.where(
-            df_frame['CurrentEndAngle'] > df_frame['CurrentStartAngle'],
-            df_frame['Valor'] * (df_frame['CurrentEndAngle'] - df_frame['CurrentStartAngle']) / (df_frame['EndAngle'] - df_frame['StartAngle']),
-            0
-        )
-        df_frame['frame'] = i
-        frames.append(df_frame)
-    
-    df_anim = pd.concat(frames, ignore_index=True)
-
-    # Controle de animação
-    slider = alt.binding_range(min=1, max=n_frames, step=1, name='Animação (0 = início, 50 = completo): ')
-    select_frame = alt.selection_point(name='frame', bind=slider, value=[{'frame': n_frames}])
-
-    pie_chart = alt.Chart(df_anim).add_params(
-        select_frame
-    ).mark_arc(
-        outerRadius=120,
-        innerRadius=50,
-        stroke='white',
-        strokeWidth=2
-    ).encode(
-        theta=alt.Theta('CurrentValue:Q', stack=True),
+    # Criar gráfico radial plot usando Altair
+    base = alt.Chart(payment_data).encode(
+        theta=alt.Theta('Valor:Q', stack=True),
+        radius=alt.Radius('Valor:Q', scale=alt.Scale(type='sqrt', zero=True, rangeMin=20)),
         color=alt.Color(
-            'Método:N',
+            'Método:N', 
             scale=alt.Scale(range=CORES_MODO_ESCURO[:3]),
             legend=alt.Legend(
                 title="Método de Pagamento",
                 orient='bottom',
-                labelAlign='center',
                 direction='horizontal',
                 titleFontSize=14,
                 labelFontSize=12,
-                offset=10
+                symbolSize=100,
+                symbolStrokeWidth=2,
+                titlePadding=10,
+                padding=10,
+                rowPadding=5,
+                columnPadding=15
             )
         ),
         tooltip=[
             alt.Tooltip('Método:N', title='Método'),
-            alt.Tooltip('Valor:Q', title='Valor Total (R$)', format=',.2f'),
-            alt.Tooltip('CurrentValue:Q', title='Valor Atual (R$)', format=',.2f')
+            alt.Tooltip('Valor:Q', title='Valor (R$)', format=',.2f')
         ]
-    ).transform_filter(
-        alt.datum.frame == select_frame.frame
+    )
+
+    radial_plot = base.mark_arc(
+        innerRadius=20, 
+        stroke='white', 
+        strokeWidth=2
     ).properties(
         title=alt.TitleParams(
-            text="Pizza Animada - Surge do Zero",
+            text='Gráfico Radial de Métodos de Pagamento', 
             fontSize=16,
             anchor='start'
         ),
-        height=350,
-        width=350,
-        padding={'bottom': 80}
+        width=500,
+        height=500,
+        padding={'bottom': 100}
     ).configure_view(
         stroke=None
     ).configure(
         background='transparent'
-    ).resolve_scale(
-        color='independent'
+    )
+
+    return radial_plot
+
+def create_area_chart_with_gradient(df):
+    """Cria gráfico de área com gradiente substituindo o gráfico de montanha."""
+    if df.empty or 'Data' not in df.columns or 'Total' not in df.columns:
+        return None
+    
+    df_sorted = df.sort_values('Data').copy()
+    
+    if df_sorted.empty:
+        return None
+    
+    area_chart = alt.Chart(df_sorted).mark_area(
+        interpolate='monotone',
+        line={'color': CORES_MODO_ESCURO[0], 'strokeWidth': 3},
+        color=alt.Gradient(
+            gradient='linear',
+            stops=[
+                alt.GradientStop(color=CORES_MODO_ESCURO[0], offset=0),
+                alt.GradientStop(color=CORES_MODO_ESCURO[4], offset=1)
+            ],
+            x1=1, x2=1, y1=1, y2=0
+        )
+    ).encode(
+        x=alt.X(
+            'Data:T', 
+            title='Data', 
+            axis=alt.Axis(format='%d/%m', labelAngle=-45, labelFontSize=12)
+        ),
+        y=alt.Y(
+            'Total:Q', 
+            title='Total de Vendas (R$)', 
+            axis=alt.Axis(labelFontSize=12)
+        ),
+        tooltip=[
+            alt.Tooltip('DataFormatada:N', title='Data'),
+            alt.Tooltip('Total:Q', title='Total de Vendas (R$)', format=',.2f')
+        ]
+    ).properties(
+        title=alt.TitleParams(
+            text='Evolução das Vendas com Gradiente', 
+            fontSize=18,
+            anchor='start'
+        ),
+        height=500,
+        width=1000
+    ).configure_view(
+        stroke=None
+    ).configure(
+        background='transparent'
     )
     
-    return pie_chart
+    return area_chart
 
 def create_advanced_daily_sales_chart(df):
-    """Cria um gráfico de vendas diárias com barras empilhadas."""
+    """Cria um gráfico de vendas diárias sem animação."""
     if df.empty or 'Data' not in df.columns:
         return None
     
@@ -369,13 +392,13 @@ def create_advanced_daily_sales_chart(df):
         x=alt.X(
             'Data:T',
             title='Data',
-            axis=alt.Axis(format='%d/%m', labelAngle=-45, labelFontSize=10)
+            axis=alt.Axis(format='%d/%m', labelAngle=-45, labelFontSize=12)
         ),
         y=alt.Y(
             'Valor:Q',
             title='Valor (R$)',
             stack='zero',
-            axis=alt.Axis(labelFontSize=10)
+            axis=alt.Axis(labelFontSize=12)
         ),
         color=alt.Color(
             'Método:N',
@@ -383,11 +406,15 @@ def create_advanced_daily_sales_chart(df):
             legend=alt.Legend(
                 title="Método de Pagamento",
                 orient='bottom',
-                labelAlign='center',
                 direction='horizontal',
                 titleFontSize=14,
                 labelFontSize=12,
-                offset=10
+                symbolSize=100,
+                symbolStrokeWidth=2,
+                titlePadding=10,
+                padding=10,
+                rowPadding=5,
+                columnPadding=15
             )
         ),
         tooltip=[
@@ -397,13 +424,13 @@ def create_advanced_daily_sales_chart(df):
         ]
     ).properties(
         title=alt.TitleParams(
-            text="Vendas Diárias por Método",
+            text="Vendas Diárias por Método de Pagamento",
             fontSize=16,
             anchor='start'
         ),
-        height=350,
-        width=600,
-        padding={'bottom': 80}
+        height=500,
+        width=1000,
+        padding={'bottom': 100}
     ).configure_view(
         stroke=None
     ).configure(
@@ -411,144 +438,9 @@ def create_advanced_daily_sales_chart(df):
     )
     
     return bars
-    
-def create_interactive_accumulation_chart(df):
-    """Gráfico de montanha que se desenvolve pelos dias - CORRIGIDO."""
-    if df.empty or 'Data' not in df.columns or 'Total' not in df.columns:
-        return None
-    
-    df_accumulated = df.sort_values('Data').copy()
-    df_accumulated['Total_Acumulado'] = df_accumulated['Total'].cumsum()
-    df_accumulated = df_accumulated.reset_index(drop=True)
-    df_accumulated['day_index'] = range(len(df_accumulated))
-    
-    if df_accumulated.empty:
-        return None
-    
-    max_value = df_accumulated['Total_Acumulado'].max()
-    max_date = df_accumulated[df_accumulated['Total_Acumulado'] == max_value]['Data'].iloc[0]
-    
-    # Controle de animação
-    slider = alt.binding_range(
-        min=1, 
-        max=len(df_accumulated), 
-        step=1, 
-        name='Desenvolvimento por Dias: '
-    )
-    select_day = alt.selection_point(
-        name='day_selector', 
-        bind=slider, 
-        value=[{'day_index': len(df_accumulated)-1}]
-    )
-    
-    # Gráfico de área animado - CORREÇÃO: usar alt.datum em vez de alt.expr.datum
-    area_chart = alt.Chart(df_accumulated).add_params(
-        select_day
-    ).mark_area(
-        opacity=0.7,
-        interpolate='monotone',
-        line={'color': CORES_MODO_ESCURO[0], 'strokeWidth': 3},
-        color=alt.Gradient(
-            gradient='linear',
-            stops=[
-                alt.GradientStop(color=CORES_MODO_ESCURO[0], offset=0),
-                alt.GradientStop(color=CORES_MODO_ESCURO[4], offset=1)
-            ],
-            x1=1, x2=1, y1=1, y2=0
-        )
-    ).encode(
-        x=alt.X(
-            'Data:T',
-            title='Período',
-            axis=alt.Axis(format='%d/%m', labelAngle=-45, labelFontSize=12)
-        ),
-        y=alt.Y(
-            'Total_Acumulado:Q',
-            title='Capital Acumulado (R$)',
-            scale=alt.Scale(zero=True),
-            axis=alt.Axis(labelFontSize=12)
-        ),
-        tooltip=[
-            alt.Tooltip('DataFormatada:N', title='Data'),
-            alt.Tooltip('Total:Q', title='Venda do Dia (R$)', format=',.2f'),
-            alt.Tooltip('Total_Acumulado:Q', title='Acumulado (R$)', format=',.2f')
-        ]
-    ).transform_filter(
-        # CORREÇÃO: usar sintaxe correta do Altair
-        alt.datum.day_index <= alt.expr('day_selector.day_index')
-    )
-    
-    # Ponto do pico
-    peak_data = pd.DataFrame({
-        'Data': [max_date],
-        'Total_Acumulado': [max_value],
-        'day_index': [len(df_accumulated)-1],
-        'Label': [f'Pico: R$ {max_value:,.0f}']
-    })
-    
-    peak_point = alt.Chart(peak_data).add_params(
-        select_day
-    ).mark_circle(
-        size=200,
-        color=CORES_MODO_ESCURO[3],
-        stroke='white',
-        strokeWidth=2
-    ).encode(
-        x='Data:T',
-        y='Total_Acumulado:Q',
-        opacity=alt.condition(
-            # CORREÇÃO: usar sintaxe correta do Altair
-            alt.datum.day_index <= alt.expr('day_selector.day_index'),
-            alt.value(1.0),
-            alt.value(0.0)
-        ),
-        tooltip=['Label:N']
-    )
-    
-    # Texto do pico
-    peak_text = alt.Chart(peak_data).add_params(
-        select_day
-    ).mark_text(
-        align='center',
-        baseline='bottom',
-        fontSize=12,
-        fontWeight='bold',
-        color=CORES_MODO_ESCURO[3],
-        dy=-10
-    ).encode(
-        x='Data:T',
-        y='Total_Acumulado:Q',
-        text=alt.value(f'🎯 Pico: R$ {max_value:,.0f}'),
-        opacity=alt.condition(
-            # CORREÇÃO: usar sintaxe correta do Altair
-            alt.datum.day_index <= alt.expr('day_selector.day_index'),
-            alt.value(1.0),
-            alt.value(0.0)
-        )
-    )
-    
-    combined_chart = alt.layer(
-        area_chart,
-        peak_point,
-        peak_text
-    ).properties(
-        title=alt.TitleParams(
-            text="Evolução do Capital Acumulado",
-            fontSize=18,
-            anchor='start'
-        ),
-        height=400,
-        width=1000
-    ).configure_view(
-        stroke=None
-    ).configure(
-        background='transparent'
-    )
-    
-    return combined_chart
 
 def create_enhanced_weekday_analysis(df):
-    """Cria análise de vendas por dia da semana."""
+    """Cria análise de vendas por dia da semana sem animação."""
     if df.empty or 'DiaSemana' not in df.columns or 'Total' not in df.columns:
         return None, None
     
@@ -601,9 +493,9 @@ def create_enhanced_weekday_analysis(df):
             fontSize=18,
             anchor='start'
         ),
-        height=400,
+        height=500,
         width=1000,
-        padding={'bottom': 80}
+        padding={'bottom': 100}
     ).configure_view(
         stroke=None
     ).configure(
@@ -615,7 +507,7 @@ def create_enhanced_weekday_analysis(df):
     return chart, best_day
 
 def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diários"):
-    """Histograma animado que cresce ao abrir - CORRIGIDO."""
+    """Histograma sem animação."""
     if df.empty or 'Total' not in df.columns or df['Total'].isnull().all():
         return None
     
@@ -623,17 +515,7 @@ def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diári
     if df_filtered_hist.empty:
         return None
     
-    # Preparar dados para animação
-    df_filtered_hist = df_filtered_hist.reset_index()
-    df_filtered_hist['animation_frame'] = range(len(df_filtered_hist))
-    
-    # Controle de animação
-    slider = alt.binding_range(min=0, max=len(df_filtered_hist)-1, step=1, name='Crescimento do Histograma: ')
-    select_frame = alt.selection_point(name='frame', bind=slider, value=[{'animation_frame': len(df_filtered_hist)-1}])
-    
-    histogram = alt.Chart(df_filtered_hist).add_params(
-        select_frame
-    ).mark_bar(
+    histogram = alt.Chart(df_filtered_hist).mark_bar(
         color=CORES_MODO_ESCURO[0],
         opacity=0.8,
         cornerRadiusTopLeft=5,
@@ -650,26 +532,17 @@ def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diári
             title='Número de Dias (Frequência)',
             axis=alt.Axis(labelFontSize=12)
         ),
-        opacity=alt.condition(
-            # CORREÇÃO: usar alt.datum em vez de alt.expr.datum
-            alt.datum.animation_frame <= alt.expr('frame.animation_frame'),
-            alt.value(0.8),
-            alt.value(0.1)
-        ),
         tooltip=[
             alt.Tooltip("Total:Q", bin=True, title="Faixa de Valor (R$)", format=",.0f"),
             alt.Tooltip("count():Q", title="Número de Dias")
         ]
-    ).transform_filter(
-        # CORREÇÃO: usar sintaxe correta do Altair
-        alt.datum.animation_frame <= alt.expr('frame.animation_frame')
     ).properties(
         title=alt.TitleParams(
             text=title,
             fontSize=18,
             anchor='start'
         ),
-        height=400,
+        height=500,
         width=1000,
         padding={'bottom': 100}
     ).configure_view(
@@ -893,7 +766,7 @@ def create_dre_textual(resultados, df_filtered, selected_anos_filter):
     st.info(f"📅 **Nota:** Este DRE apresenta os resultados consolidados do exercício {ano_dre}, independente do filtro de mês aplicado nas outras análises.")
 
 def create_financial_dashboard_altair(resultados):
-    """Cria um dashboard financeiro usando gráficos de barras horizontais."""
+    """Dashboard financeiro com legenda corrigida."""
     financial_data = pd.DataFrame({
         'Categoria': [
             'Receita Bruta',
@@ -945,11 +818,15 @@ def create_financial_dashboard_altair(resultados):
             legend=alt.Legend(
                 title="Tipo",
                 orient='bottom',
-                labelAlign='center',
                 direction='horizontal',
-                titleFontSize=16,
-                labelFontSize=14,
-                offset=10
+                titleFontSize=14,
+                labelFontSize=12,
+                symbolSize=100,
+                symbolStrokeWidth=2,
+                titlePadding=10,
+                padding=10,
+                rowPadding=5,
+                columnPadding=15
             )
         ),
         tooltip=[
@@ -963,9 +840,9 @@ def create_financial_dashboard_altair(resultados):
             fontSize=20,
             anchor='start'
         ),
-        height=600,
+        height=500,
         width=1000,
-        padding={'bottom': 80}
+        padding={'bottom': 100}
     ).configure_view(
         stroke=None
     ).configure(
@@ -976,7 +853,7 @@ def create_financial_dashboard_altair(resultados):
 
 # --- Dashboard Premium Functions ---
 def create_premium_kpi_cards(df):
-    """Cria cards KPI premium usando st.columns - CORRIGIDO"""
+    """Cria cards KPI premium com emoticons DENTRO dos boxes."""
     if df.empty:
         return
     
@@ -985,47 +862,42 @@ def create_premium_kpi_cards(df):
     melhor_dia = df.loc[df['Total'].idxmax(), 'DataFormatada'] if not df.empty else "N/A"
     crescimento = ((df['Total'].tail(7).mean() - df['Total'].head(7).mean()) / df['Total'].head(7).mean() * 100) if len(df) >= 14 else 15.5
     
-    # Usar st.columns para evitar problemas de renderização HTML
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         with st.container():
-            st.markdown("💰", help="Faturamento Total")
             st.metric(
-                label="Faturamento Total",
+                label="💰 Faturamento Total",
                 value=format_brl(total_vendas),
                 delta=f"+{crescimento:.1f}% vs período anterior"
             )
     
     with col2:
         with st.container():
-            st.markdown("📊", help="Média Diária")
             st.metric(
-                label="Média Diária",
+                label="📊 Média Diária",
                 value=format_brl(media_diaria),
                 delta="+8.2% vs período anterior"
             )
     
     with col3:
         with st.container():
-            st.markdown("🏆", help="Melhor Dia")
             st.metric(
-                label="Melhor Dia",
+                label="🏆 Melhor Dia",
                 value=melhor_dia,
                 delta="Maior faturamento"
             )
     
     with col4:
         with st.container():
-            st.markdown("📈", help="Tendência")
             st.metric(
-                label="Tendência",
+                label="📈 Tendência",
                 value=f"+{crescimento:.1f}%",
                 delta="Crescimento sustentado"
             )
 
 def create_premium_insights(df):
-    """Cria seção de insights inteligentes usando st.columns - CORRIGIDO"""
+    """Insights com bordas coloridas na lateral esquerda."""
     if df.empty:
         return
     
@@ -1040,9 +912,11 @@ def create_premium_insights(df):
         ultima_semana = df.tail(7)['Total'].mean()
         tendencia = ((ultima_semana - primeira_semana) / primeira_semana * 100) if primeira_semana > 0 else 0
         tendencia_texto = "crescimento" if tendencia > 0 else "declínio"
+        tendencia_cor = "#4caf50" if tendencia > 0 else "#f44336"
     else:
         tendencia = 0
         tendencia_texto = "estável"
+        tendencia_cor = "#ff9800"
     
     # Melhor método de pagamento
     if all(col in df.columns for col in ['Cartão', 'Dinheiro', 'Pix']):
@@ -1059,23 +933,73 @@ def create_premium_insights(df):
     
     st.subheader("🧠 Insights Inteligentes Automáticos")
     
-    # Usar st.columns para layout
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        with st.container():
-            st.markdown("### 📈 Análise de Tendência")
-            st.write(f"Suas vendas apresentam uma tendência de **{tendencia_texto}** de **{abs(tendencia):.1f}%** comparando as últimas duas semanas.")
+        st.markdown(f"""
+        <div style="
+            background: rgba(255,255,255,0.1); 
+            padding: 1.5rem; 
+            border-radius: 10px; 
+            margin: 1rem 0;
+            border-left: 4px solid {tendencia_cor};
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        ">
+            <h4 style="color: {tendencia_cor}; margin: 0 0 1rem 0;">📈 Análise de Tendência</h4>
+            <p style="margin: 0; line-height: 1.6; color: white;">
+                Suas vendas apresentam uma tendência de <strong>{tendencia_texto}</strong> 
+                de <strong style="color: {tendencia_cor};">{abs(tendencia):.1f}%</strong> 
+                comparando as últimas duas semanas.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        with st.container():
-            st.markdown("### 💡 Recomendação Estratégica")
-            st.write(f"O método **{melhor_metodo}** representa **{percentual_melhor:.1f}%** das vendas. Considere incentivar este meio de pagamento.")
+        st.markdown(f"""
+        <div style="
+            background: rgba(255,255,255,0.1); 
+            padding: 1.5rem; 
+            border-radius: 10px; 
+            margin: 1rem 0;
+            border-left: 4px solid #4caf50;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        ">
+            <h4 style="color: #4caf50; margin: 0 0 1rem 0;">💡 Recomendação Estratégica</h4>
+            <p style="margin: 0; line-height: 1.6; color: white;">
+                O método <strong>{melhor_metodo}</strong> representa 
+                <strong>{percentual_melhor:.1f}%</strong> das vendas. 
+                Considere incentivar este meio de pagamento.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
-        with st.container():
-            st.markdown("### 🎯 Meta Sugerida")
-            st.write(f"Com base na média atual de **{format_brl(media_diaria)}** por dia, uma meta de **{format_brl(media_diaria * 1.15)}** representaria um crescimento de 15%.")
+        st.markdown(f"""
+        <div style="
+            background: rgba(255,255,255,0.1); 
+            padding: 1.5rem; 
+            border-radius: 10px; 
+            margin: 1rem 0;
+            border-left: 4px solid #e91e63;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        ">
+            <h4 style="color: #e91e63; margin: 0 0 1rem 0;">🎯 Meta Sugerida</h4>
+            <p style="margin: 0; line-height: 1.6; color: white;">
+                Com base na média atual de <strong>{format_brl(media_diaria)}</strong> por dia, 
+                uma meta de <strong>{format_brl(media_diaria * 1.15)}</strong> 
+                representaria um crescimento de 15%.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
 # Função para formatar valores em moeda brasileira
 def format_brl(value):
@@ -1083,14 +1007,16 @@ def format_brl(value):
 
 # --- Interface Principal da Aplicação ---
 def main():
-    # Título (SEM BOX LARANJA)
+    # Título com logo ao lado
     try:
-        col_logo, col_title = st.columns([2, 7])
+        col_logo, col_title = st.columns([1, 6])
         with col_logo:
-            st.image('logo.png', width=300)
+            st.image('logo.png', width=80)
         with col_title:
-            st.title("SISTEMA FINANCEIRO - CLIP'S BURGER")
-            st.caption("Gestão inteligente de vendas com análise financeira em tempo real")
+            st.markdown(f"""
+            <h1 style='margin: 0; padding-left: 10px;'>SISTEMA FINANCEIRO - CLIP'S BURGER</h1>
+            <p style='margin: 0; font-size: 14px; color: gray; padding-left: 10px;'>Gestão inteligente de vendas com análise financeira em tempo real - {datetime.now().year}</p>
+            """, unsafe_allow_html=True)
     except:
         st.title("🍔 SISTEMA FINANCEIRO - CLIPS BURGER")
         st.caption("Gestão inteligente de vendas com análise financeira em tempo real")
@@ -1241,11 +1167,12 @@ def main():
             else:
                 st.info("Sem dados de vendas diárias para exibir o gráfico nos filtros selecionados.")
 
-            accumulation_chart = create_interactive_accumulation_chart(df_filtered)
-            if accumulation_chart:
-                st.altair_chart(accumulation_chart, use_container_width=True)
+            # MUDANÇA: Usar area chart com gradiente em vez de montanha
+            area_chart = create_area_chart_with_gradient(df_filtered)
+            if area_chart:
+                st.altair_chart(area_chart, use_container_width=True)
             else:
-                st.info("Não foi possível gerar o gráfico de acumulação.")
+                st.info("Não foi possível gerar o gráfico de área.")
         else:
              if df_processed.empty and df_raw.empty and get_worksheet() is None: 
                  st.warning("Não foi possível carregar os dados. Verifique configurações e credenciais.")
@@ -1306,7 +1233,7 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
                 
-                with payment_cols[1]:
+                                with payment_cols[1]:
                     st.markdown(f"""
                     <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #54a24b, #64b25b); border-radius: 10px; color: white; margin-bottom: 1rem;">
                         <h3 style="margin: 0; font-size: 1.5rem;">💵 Dinheiro</h3>
@@ -1328,12 +1255,12 @@ def main():
             
             st.divider()
 
-            # Gráfico de pizza logo abaixo dos cards
-            pie_chart = create_enhanced_payment_pie_chart(df_filtered)
-            if pie_chart:
-                st.altair_chart(pie_chart, use_container_width=True)
+            # MUDANÇA: Usar gráfico radial em vez de pizza
+            radial_chart = create_radial_plot(df_filtered)
+            if radial_chart:
+                st.altair_chart(radial_chart, use_container_width=True)
             else:
-                st.info("Sem dados de pagamento para exibir o gráfico de pizza nos filtros selecionados.")
+                st.info("Sem dados de pagamento para exibir o gráfico radial nos filtros selecionados.")
 
             st.divider()
 
@@ -1651,7 +1578,7 @@ def main():
             
             st.markdown("---")
             
-            # Gráficos lado a lado - 2/3 para vendas diárias, 1/3 para pizza
+            # Gráficos lado a lado - 2/3 para vendas diárias, 1/3 para radial
             col_chart1, col_chart2 = st.columns([2, 1])
             
             with col_chart1:
@@ -1661,17 +1588,17 @@ def main():
                     st.altair_chart(daily_chart, use_container_width=True)
             
             with col_chart2:
-                # Gráfico de pizza animado (1/3 do espaço)
-                pie_chart = create_enhanced_payment_pie_chart(df_filtered)
-                if pie_chart:
-                    st.altair_chart(pie_chart, use_container_width=True)
+                # MUDANÇA: Gráfico radial em vez de pizza (1/3 do espaço)
+                radial_chart = create_radial_plot(df_filtered)
+                if radial_chart:
+                    st.altair_chart(radial_chart, use_container_width=True)
             
             st.markdown("---")
             
-            # Gráfico de acumulação em tela cheia
-            accumulation_chart = create_interactive_accumulation_chart(df_filtered)
-            if accumulation_chart:
-                st.altair_chart(accumulation_chart, use_container_width=True)
+            # MUDANÇA: Gráfico de área com gradiente em tela cheia
+            area_chart = create_area_chart_with_gradient(df_filtered)
+            if area_chart:
+                st.altair_chart(area_chart, use_container_width=True)
             
             st.markdown("---")
             

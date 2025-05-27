@@ -951,7 +951,7 @@ def create_financial_dashboard_altair(resultados):
 
 # --- Dashboard Premium Functions ---
 def create_premium_kpi_cards(df):
-    """Cria cards KPI premium com CSS animado"""
+    """Cria cards KPI premium com CSS animado - VERSÃO CORRIGIDA"""
     if df.empty:
         return
     
@@ -960,40 +960,83 @@ def create_premium_kpi_cards(df):
     melhor_dia = df.loc[df['Total'].idxmax(), 'DataFormatada'] if not df.empty else "N/A"
     crescimento = ((df['Total'].tail(7).mean() - df['Total'].head(7).mean()) / df['Total'].head(7).mean() * 100) if len(df) >= 14 else 15.5
     
-    st.markdown(f"""
-    <div class="kpi-grid">
-        <div class="kpi-card animate-fade-in">
+    # SOLUÇÃO: Usar st.columns em vez de HTML puro
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown(f"""
+        <div style="
+            text-align: center; 
+            padding: 1.5rem; 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            border-radius: 15px; 
+            color: white; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin-bottom: 1rem;
+        ">
             <div style="font-size: 2.5rem; margin-bottom: 10px;">💰</div>
-            <h3 style="margin: 0; color: #64ffda;">Faturamento Total</h3>
-            <h1 style="margin: 0.5rem 0; font-size: 2.5rem;">{format_brl(total_vendas)}</h1>
-            <p style="opacity: 0.8;">↗️ +{crescimento:.1f}% vs período anterior</p>
+            <h3 style="margin: 0; color: #64ffda; font-size: 1.2rem;">Faturamento Total</h3>
+            <h1 style="margin: 0.5rem 0; font-size: 2rem;">{format_brl(total_vendas)}</h1>
+            <p style="opacity: 0.8; margin: 0;">↗️ +{crescimento:.1f}% vs período anterior</p>
         </div>
-        
-        <div class="kpi-card animate-fade-in">
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div style="
+            text-align: center; 
+            padding: 1.5rem; 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            border-radius: 15px; 
+            color: white; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin-bottom: 1rem;
+        ">
             <div style="font-size: 2.5rem; margin-bottom: 10px;">📊</div>
-            <h3 style="margin: 0; color: #ff9800;">Média Diária</h3>
-            <h1 style="margin: 0.5rem 0; font-size: 2.5rem;">{format_brl(media_diaria)}</h1>
-            <p style="opacity: 0.8;">↗️ +8.2% vs período anterior</p>
+            <h3 style="margin: 0; color: #ff9800; font-size: 1.2rem;">Média Diária</h3>
+            <h1 style="margin: 0.5rem 0; font-size: 2rem;">{format_brl(media_diaria)}</h1>
+            <p style="opacity: 0.8; margin: 0;">↗️ +8.2% vs período anterior</p>
         </div>
-        
-        <div class="kpi-card animate-fade-in">
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div style="
+            text-align: center; 
+            padding: 1.5rem; 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            border-radius: 15px; 
+            color: white; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin-bottom: 1rem;
+        ">
             <div style="font-size: 2.5rem; margin-bottom: 10px;">🏆</div>
-            <h3 style="margin: 0; color: #4caf50;">Melhor Dia</h3>
+            <h3 style="margin: 0; color: #4caf50; font-size: 1.2rem;">Melhor Dia</h3>
             <h1 style="margin: 0.5rem 0; font-size: 2rem;">{melhor_dia}</h1>
-            <p style="opacity: 0.8;">↗️ Maior faturamento</p>
+            <p style="opacity: 0.8; margin: 0;">↗️ Maior faturamento</p>
         </div>
-        
-        <div class="kpi-card animate-fade-in">
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div style="
+            text-align: center; 
+            padding: 1.5rem; 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            border-radius: 15px; 
+            color: white; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin-bottom: 1rem;
+        ">
             <div style="font-size: 2.5rem; margin-bottom: 10px;">📈</div>
-            <h3 style="margin: 0; color: #e91e63;">Tendência</h3>
-            <h1 style="margin: 0.5rem 0; font-size: 2.5rem;">+{crescimento:.1f}%</h1>
-            <p style="opacity: 0.8;">↗️ Crescimento sustentado</p>
+            <h3 style="margin: 0; color: #e91e63; font-size: 1.2rem;">Tendência</h3>
+            <h1 style="margin: 0.5rem 0; font-size: 2rem;">+{crescimento:.1f}%</h1>
+            <p style="opacity: 0.8; margin: 0;">↗️ Crescimento sustentado</p>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
 def create_premium_insights(df):
-    """Cria seção de insights inteligentes"""
+    """Cria seção de insights inteligentes - VERSÃO CORRIGIDA"""
     if df.empty:
         return
     
@@ -1027,40 +1070,76 @@ def create_premium_insights(df):
         melhor_metodo = "N/A"
         percentual_melhor = 0
     
-    st.markdown(f"""
-    <div class="premium-card">
+    # SOLUÇÃO: Usar st.columns em vez de HTML grid complexo
+    st.markdown("""
+    <div style="
+        background: linear-gradient(135deg, #1e3c72, #2a5298); 
+        padding: 2rem; 
+        border-radius: 15px; 
+        color: white; 
+        margin: 1rem 0;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    ">
         <h2 style="color: #64ffda; margin: 0 0 1.5rem 0; text-align: center;">🧠 Insights Inteligentes Automáticos</h2>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-            <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 10px;">
-                <h4 style="color: {tendencia_cor}; margin: 0 0 1rem 0;">📈 Análise de Tendência</h4>
-                <p style="margin: 0; line-height: 1.6;">
-                    Suas vendas apresentam uma tendência de <strong>{tendencia_texto}</strong> 
-                    de <strong style="color: {tendencia_cor};">{abs(tendencia):.1f}%</strong> 
-                    comparando as últimas duas semanas.
-                </p>
-            </div>
-            
-            <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 10px;">
-                <h4 style="color: #4caf50; margin: 0 0 1rem 0;">💡 Recomendação Estratégica</h4>
-                <p style="margin: 0; line-height: 1.6;">
-                    O método <strong>{melhor_metodo}</strong> representa 
-                    <strong>{percentual_melhor:.1f}%</strong> das vendas. 
-                    Considere incentivar este meio de pagamento.
-                </p>
-            </div>
-            
-            <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 10px;">
-                <h4 style="color: #e91e63; margin: 0 0 1rem 0;">🎯 Meta Sugerida</h4>
-                <p style="margin: 0; line-height: 1.6;">
-                    Com base na média atual de <strong>{format_brl(media_diaria)}</strong> por dia, 
-                    uma meta de <strong>{format_brl(media_diaria * 1.15)}</strong> 
-                    representaria um crescimento de 15%.
-                </p>
-            </div>
-        </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Usar colunas do Streamlit para layout
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown(f"""
+        <div style="
+            background: rgba(255,255,255,0.1); 
+            padding: 1.5rem; 
+            border-radius: 10px; 
+            margin: 1rem 0;
+            border-left: 4px solid {tendencia_cor};
+        ">
+            <h4 style="color: {tendencia_cor}; margin: 0 0 1rem 0;">📈 Análise de Tendência</h4>
+            <p style="margin: 0; line-height: 1.6; color: white;">
+                Suas vendas apresentam uma tendência de <strong>{tendencia_texto}</strong> 
+                de <strong style="color: {tendencia_cor};">{abs(tendencia):.1f}%</strong> 
+                comparando as últimas duas semanas.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div style="
+            background: rgba(255,255,255,0.1); 
+            padding: 1.5rem; 
+            border-radius: 10px; 
+            margin: 1rem 0;
+            border-left: 4px solid #4caf50;
+        ">
+            <h4 style="color: #4caf50; margin: 0 0 1rem 0;">💡 Recomendação Estratégica</h4>
+            <p style="margin: 0; line-height: 1.6; color: white;">
+                O método <strong>{melhor_metodo}</strong> representa 
+                <strong>{percentual_melhor:.1f}%</strong> das vendas. 
+                Considere incentivar este meio de pagamento.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div style="
+            background: rgba(255,255,255,0.1); 
+            padding: 1.5rem; 
+            border-radius: 10px; 
+            margin: 1rem 0;
+            border-left: 4px solid #e91e63;
+        ">
+            <h4 style="color: #e91e63; margin: 0 0 1rem 0;">🎯 Meta Sugerida</h4>
+            <p style="margin: 0; line-height: 1.6; color: white;">
+                Com base na média atual de <strong>{format_brl(media_diaria)}</strong> por dia, 
+                uma meta de <strong>{format_brl(media_diaria * 1.15)}</strong> 
+                representaria um crescimento de 15%.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
 # Função para formatar valores em moeda brasileira
 def format_brl(value):

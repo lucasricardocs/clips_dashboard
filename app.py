@@ -562,17 +562,22 @@ def create_enhanced_weekday_analysis(df):
     weekday_stats = weekday_stats.reindex([d for d in dias_semana_ordem if d in weekday_stats.index])
     weekday_stats = weekday_stats.reset_index()
     
-    # Calcular percentuais para as médias
+    # Calcular percentuais
     total_media_geral = weekday_stats['Média'].sum()
     weekday_stats['Percentual_Media'] = (weekday_stats['Média'] / total_media_geral * 100).round(1)
     
-    # Calcular percentuais para os totais
     total_vendas_geral = weekday_stats['Total'].sum()
     weekday_stats['Percentual_Total'] = (weekday_stats['Total'] / total_vendas_geral * 100).round(1)
     
-    # Gráfico de barras para média com percentuais
-    bars_media = alt.Chart(weekday_stats).mark_bar(
-        color=CORES_MODO_ESCURO[0],
+    # SOLUÇÃO: Criar um único gráfico com facetas em vez de vconcat
+    # Preparar dados para facetas
+    df_facet = pd.concat([
+        weekday_stats.assign(Tipo='Média por Dia', Valor=weekday_stats['Média'], Percentual=weekday_stats['Percentual_Media']),
+        weekday_stats.assign(Tipo='Total Acumulado', Valor=weekday_stats['Total'], Percentual=weekday_stats['Percentual_Total'])
+    ])
+    
+    # Gráfico base com facetas
+    base_chart = alt.Chart(df_facet).mark_bar(
         cornerRadiusTopLeft=5,
         cornerRadiusTopRight=5
     ).encode(
@@ -583,118 +588,79 @@ def create_enhanced_weekday_analysis(df):
             axis=alt.Axis(labelAngle=-45, labelFontSize=12)
         ),
         y=alt.Y(
-            'Média:Q',
-            title='Média de Vendas (R$)',
+            'Valor:Q',
+            title='Valor (R$)',
             axis=alt.Axis(labelFontSize=12)
+        ),
+        color=alt.Color(
+            'Tipo:N',
+            scale=alt.Scale(range=[CORES_MODO_ESCURO[0], CORES_MODO_ESCURO[2]]),
+            legend=alt.Legend(
+                title="Tipo de Análise",
+                orient='bottom',
+                labelAlign='center',
+                direction='horizontal',
+                titleFontSize=16,
+                labelFontSize=14
+            )
         ),
         tooltip=[
             alt.Tooltip('DiaSemana:N', title='Dia'),
-            alt.Tooltip('Média:Q', title='Média (R$)', format=',.2f'),
-            alt.Tooltip('Percentual_Media:Q', title='% da Média Total', format='.1f'),
-            alt.Tooltip('Dias_Vendas:Q', title='Dias com Vendas')
+            alt.Tooltip('Valor:Q', title='Valor (R$)', format=',.2f'),
+            alt.Tooltip('Percentual:Q', title='Percentual (%)', format='.1f'),
+            alt.Tooltip('Tipo:N', title='Tipo')
         ]
-    )
-    
-    # Texto com percentuais acima das barras de média - CORRIGIDO
-    text_media = alt.Chart(weekday_stats).mark_text(
-        align='center',
-        baseline='bottom',
-        dy=-8,
-        fontSize=14,
-        fontWeight='bold',
-        color='#ffffff',
-        stroke='#000000',
-        strokeWidth=1
-    ).encode(
-        x=alt.X('DiaSemana:O', sort=dias_semana_ordem),
-        y=alt.Y('Média:Q'),
-        text=alt.Text('Percentual_Media:Q', format='.1f', formatType='number')
-    ).transform_calculate(
-        text_label="datum.Percentual_Media + '%'"
-    )
-    
-    # Combinar barras e texto para média
-    chart_media = (bars_media + text_media).properties(
-        title=alt.TitleParams(
-            text="📊 Média de Vendas por Dia da Semana",
-            fontSize=18
-        ),
-        height=400,
-        width=1000
-    ).configure_view(
-        stroke=None
-    ).configure(
-        background='transparent'
-    )
-    
-    # Gráfico de barras para total com percentuais
-    bars_total = alt.Chart(weekday_stats).mark_bar(
-        color=CORES_MODO_ESCURO[2],
-        cornerRadiusTopLeft=5,
-        cornerRadiusTopRight=5
-    ).encode(
-        x=alt.X(
-            'DiaSemana:O',
-            title='Dia da Semana',
-            sort=dias_semana_ordem,
-            axis=alt.Axis(labelAngle=-45, labelFontSize=12)
-        ),
-        y=alt.Y(
-            'Total:Q',
-            title='Total Acumulado (R$)',
-            axis=alt.Axis(labelFontSize=12)
-        ),
-        tooltip=[
-            alt.Tooltip('DiaSemana:N', title='Dia'),
-            alt.Tooltip('Total:Q', title='Total (R$)', format=',.2f'),
-            alt.Tooltip('Percentual_Total:Q', title='% do Total Geral', format='.1f'),
-            alt.Tooltip('Média:Q', title='Média (R$)', format=',.2f')
-        ]
-    )
-    
-    # Texto com percentuais acima das barras de total - CORRIGIDO
-    text_total = alt.Chart(weekday_stats).mark_text(
-        align='center',
-        baseline='bottom',
-        dy=-8,
-        fontSize=14,
-        fontWeight='bold',
-        color='#ffffff',
-        stroke='#000000',
-        strokeWidth=1
-    ).encode(
-        x=alt.X('DiaSemana:O', sort=dias_semana_ordem),
-        y=alt.Y('Total:Q'),
-        text=alt.Text('Percentual_Total:Q', format='.1f', formatType='number')
-    ).transform_calculate(
-        text_label="datum.Percentual_Total + '%'"
-    )
-    
-    # Combinar barras e texto para total
-    chart_total = (bars_total + text_total).properties(
-        title=alt.TitleParams(
-            text="📈 Total de Vendas por Dia da Semana",
-            fontSize=18
-        ),
-        height=400,
-        width=1000
-    ).configure_view(
-        stroke=None
-    ).configure(
-        background='transparent'
-    )
-    
-    # Combinar gráficos verticalmente
-    combined_chart = alt.vconcat(
-        chart_media,
-        chart_total
+    ).facet(
+        row=alt.Row(
+            'Tipo:N',
+            title=None,
+            header=alt.Header(
+                labelFontSize=16,
+                labelFontWeight='bold'
+            )
+        )
     ).resolve_scale(
+        y='independent'
+    ).properties(
+        title=alt.TitleParams(
+            text="📊 Análise de Vendas por Dia da Semana",
+            fontSize=20,
+            anchor='start'
+        )
+    ).configure_view(
+        stroke=None
+    ).configure(
+        background='transparent'
+    )
+    
+    # Adicionar texto com percentuais
+    text_chart = alt.Chart(df_facet).mark_text(
+        align='center',
+        baseline='bottom',
+        dy=-8,
+        fontSize=14,
+        fontWeight='bold',
+        color='#ffffff',
+        stroke='#000000',
+        strokeWidth=1
+    ).encode(
+        x=alt.X('DiaSemana:O', sort=dias_semana_ordem),
+        y=alt.Y('Valor:Q'),
+        text=alt.Text('Percentual:Q', format='.1f'),
+        row=alt.Row('Tipo:N', title=None)
+    ).transform_calculate(
+        text_label="datum.Percentual + '%'"
+    )
+    
+    # Combinar gráfico base com texto
+    combined_chart = (base_chart + text_chart).resolve_scale(
         y='independent'
     )
     
     best_day = weekday_stats.loc[weekday_stats['Média'].idxmax(), 'DiaSemana']
     
     return combined_chart, best_day
+
 
 def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diários"):
     """Cria histograma de distribuição de vendas."""

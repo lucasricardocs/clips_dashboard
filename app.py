@@ -615,7 +615,7 @@ def create_enhanced_weekday_analysis(df):
     return chart, best_day
 
 def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diários"):
-    """Histograma animado que cresce ao abrir."""
+    """Histograma animado que cresce ao abrir - CORRIGIDO."""
     if df.empty or 'Total' not in df.columns or df['Total'].isnull().all():
         return None
     
@@ -651,7 +651,8 @@ def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diári
             axis=alt.Axis(labelFontSize=12)
         ),
         opacity=alt.condition(
-            alt.expr.datum.animation_frame <= select_frame.animation_frame,
+            # CORREÇÃO: usar alt.datum em vez de alt.expr.datum
+            alt.datum.animation_frame <= alt.expr('frame.animation_frame'),
             alt.value(0.8),
             alt.value(0.1)
         ),
@@ -660,7 +661,8 @@ def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diári
             alt.Tooltip("count():Q", title="Número de Dias")
         ]
     ).transform_filter(
-        alt.expr.datum.animation_frame <= select_frame.animation_frame
+        # CORREÇÃO: usar sintaxe correta do Altair
+        alt.datum.animation_frame <= alt.expr('frame.animation_frame')
     ).properties(
         title=alt.TitleParams(
             text=title,

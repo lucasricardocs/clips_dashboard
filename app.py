@@ -126,6 +126,41 @@ def inject_css():
             transform: translateY(0);
         }
     }
+    
+    /* Animações para gráficos */
+    .chart-container {
+        animation: slideInUp 0.8s ease-out;
+        transition: all 0.3s ease;
+    }
+    
+    .chart-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Grid para gráficos do dashboard premium */
+    .premium-charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin: 2rem 0;
+    }
+    
+    .premium-chart-full {
+        grid-column: 1 / -1;
+        margin: 2rem 0;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -296,7 +331,7 @@ def process_data(df_input):
 
 # --- Funções de Gráficos Interativos em Altair ---
 def create_enhanced_payment_pie_chart(df):
-    """Cria um gráfico de pizza interativo usando Altair com legenda à direita."""
+    """Cria um gráfico de pizza interativo usando Altair com legenda abaixo e centralizada."""
     if df.empty or not any(col in df.columns for col in ['Cartão', 'Dinheiro', 'Pix']):
         return None
     
@@ -321,7 +356,9 @@ def create_enhanced_payment_pie_chart(df):
             scale=alt.Scale(range=CORES_MODO_ESCURO[:3]),
             legend=alt.Legend(
                 title="Método de Pagamento",
-                orient='right',
+                orient='bottom',  # LEGENDA ABAIXO
+                labelAlign='center',  # CENTRALIZADA
+                direction='horizontal',  # HORIZONTAL
                 titleFontSize=16,
                 labelFontSize=14
             )
@@ -337,7 +374,12 @@ def create_enhanced_payment_pie_chart(df):
             anchor='start'
         ),
         height=500,
-        width=600
+        width=600,
+        padding={'bottom': 80}  # ESPAÇO PARA LEGENDA
+    ).configure_view(
+        stroke=None
+    ).configure(
+        background='transparent'
     ).resolve_scale(
         color='independent'
     )
@@ -345,7 +387,7 @@ def create_enhanced_payment_pie_chart(df):
     return pie_chart
 
 def create_advanced_daily_sales_chart(df):
-    """Cria um gráfico de vendas diárias com barras empilhadas."""
+    """Cria um gráfico de vendas diárias com barras empilhadas e legenda abaixo."""
     if df.empty or 'Data' not in df.columns:
         return None
     
@@ -378,7 +420,9 @@ def create_advanced_daily_sales_chart(df):
             scale=alt.Scale(range=CORES_MODO_ESCURO[:3]),
             legend=alt.Legend(
                 title="Método de Pagamento",
-                orient='right',
+                orient='bottom',  # LEGENDA ABAIXO
+                labelAlign='center',  # CENTRALIZADA
+                direction='horizontal',  # HORIZONTAL
                 titleFontSize=16,
                 labelFontSize=14
             )
@@ -395,7 +439,12 @@ def create_advanced_daily_sales_chart(df):
             anchor='start'
         ),
         height=600,
-        width=1000
+        width=1000,
+        padding={'bottom': 80}  # ESPAÇO PARA LEGENDA
+    ).configure_view(
+        stroke=None
+    ).configure(
+        background='transparent'
     )
     
     return bars
@@ -485,6 +534,10 @@ def create_interactive_accumulation_chart(df):
         ),
         height=600,
         width=1000
+    ).configure_view(
+        stroke=None
+    ).configure(
+        background='transparent'
     )
     
     return combined_chart
@@ -542,20 +595,22 @@ def create_enhanced_weekday_analysis(df):
         ]
     )
     
-    # Texto com percentuais acima das barras de média
+    # Texto com percentuais acima das barras de média - CORRIGIDO
     text_media = alt.Chart(weekday_stats).mark_text(
         align='center',
         baseline='bottom',
-        dy=-5,
-        fontSize=12,
+        dy=-8,
+        fontSize=14,
         fontWeight='bold',
-        color='white',
-        stroke='black',
-        strokeWidth=0.5
+        color='#ffffff',
+        stroke='#000000',
+        strokeWidth=1
     ).encode(
         x=alt.X('DiaSemana:O', sort=dias_semana_ordem),
         y=alt.Y('Média:Q'),
-        text=alt.Text('Percentual_Media:Q', format='.1f%')
+        text=alt.Text('Percentual_Media:Q', format='.1f', formatType='number')
+    ).transform_calculate(
+        text_label="datum.Percentual_Media + '%'"
     )
     
     # Combinar barras e texto para média
@@ -566,6 +621,10 @@ def create_enhanced_weekday_analysis(df):
         ),
         height=400,
         width=1000
+    ).configure_view(
+        stroke=None
+    ).configure(
+        background='transparent'
     )
     
     # Gráfico de barras para total com percentuais
@@ -593,20 +652,22 @@ def create_enhanced_weekday_analysis(df):
         ]
     )
     
-    # Texto com percentuais acima das barras de total
+    # Texto com percentuais acima das barras de total - CORRIGIDO
     text_total = alt.Chart(weekday_stats).mark_text(
         align='center',
         baseline='bottom',
-        dy=-5,
-        fontSize=12,
+        dy=-8,
+        fontSize=14,
         fontWeight='bold',
-        color='white',
-        stroke='black',
-        strokeWidth=0.5
+        color='#ffffff',
+        stroke='#000000',
+        strokeWidth=1
     ).encode(
         x=alt.X('DiaSemana:O', sort=dias_semana_ordem),
         y=alt.Y('Total:Q'),
-        text=alt.Text('Percentual_Total:Q', format='.1f%')
+        text=alt.Text('Percentual_Total:Q', format='.1f', formatType='number')
+    ).transform_calculate(
+        text_label="datum.Percentual_Total + '%'"
     )
     
     # Combinar barras e texto para total
@@ -617,6 +678,10 @@ def create_enhanced_weekday_analysis(df):
         ),
         height=400,
         width=1000
+    ).configure_view(
+        stroke=None
+    ).configure(
+        background='transparent'
     )
     
     # Combinar gráficos verticalmente
@@ -669,6 +734,10 @@ def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diári
         ),
         height=600,
         width=1000
+    ).configure_view(
+        stroke=None
+    ).configure(
+        background='transparent'
     )
     
     return histogram
@@ -779,12 +848,14 @@ def create_dre_textual(resultados, df_filtered, selected_anos_filter):
     else:
         resultados_ano = resultados
 
-    # Cabeçalho centralizado
+    # Cabeçalho centralizado - CORRIGIDO ALINHAMENTO
     st.markdown(f"""
     <div style="text-align: center; margin-bottom: 30px;">
         <h3 style="margin: 0; font-weight: normal;">DEMONSTRAÇÃO DO RESULTADO DO EXERCÍCIO</h3>
         <p style="margin: 5px 0; font-style: italic;">Clips Burger - Exercício {ano_dre}</p>
-        <p style="margin: 0; text-align: right; font-size: 14px;">Em R$</p>
+    </div>
+    <div style="text-align: right; margin-bottom: 20px;">
+        <p style="margin: 0; font-size: 14px; font-weight: bold;">Em R$</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -935,7 +1006,9 @@ def create_financial_dashboard_altair(resultados):
             ),
             legend=alt.Legend(
                 title="Tipo",
-                orient='right',
+                orient='bottom',  # LEGENDA ABAIXO
+                labelAlign='center',  # CENTRALIZADA
+                direction='horizontal',  # HORIZONTAL
                 titleFontSize=16,
                 labelFontSize=14
             )
@@ -952,7 +1025,12 @@ def create_financial_dashboard_altair(resultados):
             anchor='start'
         ),
         height=600,
-        width=1000
+        width=1000,
+        padding={'bottom': 80}  # ESPAÇO PARA LEGENDA
+    ).configure_view(
+        stroke=None
+    ).configure(
+        background='transparent'
     )
     
     return chart
@@ -1650,27 +1728,41 @@ def main():
             
             st.markdown("---")
             
-            # Gráficos lado a lado
+            # Gráficos lado a lado com MESMO TAMANHO - CORRIGIDO
+            st.markdown('<div class="premium-charts-grid">', unsafe_allow_html=True)
+            
             col_chart1, col_chart2 = st.columns(2)
             
             with col_chart1:
-                # Gráfico de vendas diárias
+                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                # Gráfico de vendas diárias - TAMANHO AJUSTADO
                 daily_chart = create_advanced_daily_sales_chart(df_filtered)
                 if daily_chart:
+                    # Ajustar tamanho para ser igual ao pizza
+                    daily_chart = daily_chart.properties(height=500, width=500)
                     st.altair_chart(daily_chart, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
             
             with col_chart2:
-                # Gráfico de pizza
+                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+                # Gráfico de pizza - TAMANHO MANTIDO
                 pie_chart = create_enhanced_payment_pie_chart(df_filtered)
                 if pie_chart:
                     st.altair_chart(pie_chart, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
             
             st.markdown("---")
             
-            # Gráfico de acumulação em tela cheia
+            # Gráfico de acumulação em tela cheia - LARGURA DOS DOIS SOMADOS
+            st.markdown('<div class="premium-chart-full chart-container">', unsafe_allow_html=True)
             accumulation_chart = create_interactive_accumulation_chart(df_filtered)
             if accumulation_chart:
+                # Ajustar largura para ocupar espaço dos dois gráficos acima
+                accumulation_chart = accumulation_chart.properties(height=600, width=1200)
                 st.altair_chart(accumulation_chart, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
             
             st.markdown("---")
             

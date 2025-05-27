@@ -1233,7 +1233,7 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
                 
-                                with payment_cols[1]:
+                with payment_cols[1]:
                     st.markdown(f"""
                     <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #54a24b, #64b25b); border-radius: 10px; color: white; margin-bottom: 1rem;">
                         <h3 style="margin: 0; font-size: 1.5rem;">💵 Dinheiro</h3>

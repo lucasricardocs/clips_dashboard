@@ -2,6 +2,7 @@ import streamlit as st
 import gspread
 import pandas as pd
 import altair as alt
+import numpy as np
 from datetime import datetime, timedelta
 from google.oauth2.service_account import Credentials
 from gspread.exceptions import SpreadsheetNotFound
@@ -57,6 +58,10 @@ def inject_css():
         padding: 1rem;
         border-radius: 0.5rem;
         margin-bottom: 0.5rem;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
     
     /* Dashboard Premium Styles */
@@ -64,95 +69,10 @@ def inject_css():
         background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
     }
     
-    .dashboard-header {
-        background: linear-gradient(135deg, #ff6b35, #f7931e);
-        padding: 2rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        text-align: center;
-        color: white;
-        box-shadow: 0 20px 40px rgba(255, 107, 53, 0.3);
-    }
-    
-    .premium-card {
-        background: linear-gradient(135deg, #1e3c72, #2a5298);
-        padding: 2rem;
-        border-radius: 15px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        margin: 1rem 0;
-        transition: transform 0.3s ease;
-        color: white;
-    }
-    
-    .premium-card:hover {
-        transform: translateY(-5px);
-    }
-    
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin: 2rem 0;
-    }
-    
-    .kpi-card {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        padding: 1.5rem;
-        border-radius: 15px;
-        text-align: center;
-        color: white;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        transition: all 0.3s ease;
-    }
-    
-    .kpi-card:hover {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-    }
-    
-    .animate-fade-in {
-        animation: fadeInUp 0.6s ease-out;
-    }
-    
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    /* Animações para gráficos */
-    .chart-container {
-        animation: slideInUp 0.8s ease-out;
-        transition: all 0.3s ease;
-    }
-    
-    .chart-container:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    }
-    
-    @keyframes slideInUp {
-        from {
-            opacity: 0;
-            transform: translateY(40px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
     /* Grid para gráficos do dashboard premium */
     .premium-charts-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 2fr 1fr;
         gap: 2rem;
         margin: 2rem 0;
     }
@@ -331,51 +251,86 @@ def process_data(df_input):
 
 # --- Funções de Gráficos Interativos em Altair ---
 def create_enhanced_payment_pie_chart(df):
-    """Cria um gráfico de pizza interativo usando Altair com legenda abaixo e centralizada."""
+    """Pie chart animado que surge do zero e gira até se completar."""
     if df.empty or not any(col in df.columns for col in ['Cartão', 'Dinheiro', 'Pix']):
         return None
     
     payment_data = pd.DataFrame({
-        'Método': ['💳 Cartão', '💵 Dinheiro', '📱 PIX'],
+        'Método': ['Cartão', 'Dinheiro', 'PIX'],
         'Valor': [df['Cartão'].sum(), df['Dinheiro'].sum(), df['Pix'].sum()]
     })
     payment_data = payment_data[payment_data['Valor'] > 0]
     
     if payment_data.empty:
         return None
+
+    # Calcular ângulos para animação
+    payment_data['Percentual'] = payment_data['Valor'] / payment_data['Valor'].sum()
+    payment_data['Acumulado'] = payment_data['Percentual'].cumsum()
+    payment_data['StartAngle'] = 2 * np.pi * payment_data['Acumulado'].shift(fill_value=0)
+    payment_data['EndAngle'] = 2 * np.pi * payment_data['Acumulado']
+
+    # Criar frames de animação
+    frames = []
+    n_frames = 50
+    for i in range(1, n_frames + 1):
+        progress = i / n_frames
+        angle_limit = 2 * np.pi * progress
+        df_frame = payment_data.copy()
+        df_frame['CurrentEndAngle'] = np.minimum(df_frame['EndAngle'], angle_limit)
+        df_frame['CurrentStartAngle'] = np.minimum(df_frame['StartAngle'], angle_limit)
+        df_frame['CurrentValue'] = np.where(
+            df_frame['CurrentEndAngle'] > df_frame['CurrentStartAngle'],
+            df_frame['Valor'] * (df_frame['CurrentEndAngle'] - df_frame['CurrentStartAngle']) / (df_frame['EndAngle'] - df_frame['StartAngle']),
+            0
+        )
+        df_frame['frame'] = i
+        frames.append(df_frame)
     
-    pie_chart = alt.Chart(payment_data).mark_arc(
-        outerRadius=200,
-        innerRadius=80,
+    df_anim = pd.concat(frames, ignore_index=True)
+
+    # Controle de animação
+    slider = alt.binding_range(min=1, max=n_frames, step=1, name='Animação (0 = início, 50 = completo): ')
+    select_frame = alt.selection_point(name='frame', bind=slider, value=[{'frame': n_frames}])
+
+    pie_chart = alt.Chart(df_anim).add_params(
+        select_frame
+    ).mark_arc(
+        outerRadius=120,
+        innerRadius=50,
         stroke='white',
-        strokeWidth=3
+        strokeWidth=2
     ).encode(
-        theta=alt.Theta('Valor:Q', stack=True),
+        theta=alt.Theta('CurrentValue:Q', stack=True),
         color=alt.Color(
             'Método:N',
             scale=alt.Scale(range=CORES_MODO_ESCURO[:3]),
             legend=alt.Legend(
                 title="Método de Pagamento",
-                orient='bottom',  # LEGENDA ABAIXO
-                labelAlign='center',  # CENTRALIZADA
-                direction='horizontal',  # HORIZONTAL
-                titleFontSize=16,
-                labelFontSize=14
+                orient='bottom',
+                labelAlign='center',
+                direction='horizontal',
+                titleFontSize=14,
+                labelFontSize=12,
+                offset=10
             )
         ),
         tooltip=[
             alt.Tooltip('Método:N', title='Método'),
-            alt.Tooltip('Valor:Q', title='Valor (R$)', format=',.2f')
+            alt.Tooltip('Valor:Q', title='Valor Total (R$)', format=',.2f'),
+            alt.Tooltip('CurrentValue:Q', title='Valor Atual (R$)', format=',.2f')
         ]
+    ).transform_filter(
+        alt.datum.frame == select_frame.frame
     ).properties(
         title=alt.TitleParams(
-            text="🥧 Distribuição por Método de Pagamento",
-            fontSize=20,
+            text="Pizza Animada - Surge do Zero",
+            fontSize=16,
             anchor='start'
         ),
-        height=500,
-        width=600,
-        padding={'bottom': 80}  # ESPAÇO PARA LEGENDA
+        height=350,
+        width=350,
+        padding={'bottom': 80}
     ).configure_view(
         stroke=None
     ).configure(
@@ -387,11 +342,14 @@ def create_enhanced_payment_pie_chart(df):
     return pie_chart
 
 def create_advanced_daily_sales_chart(df):
-    """Cria um gráfico de vendas diárias com barras empilhadas e legenda abaixo."""
+    """Cria um gráfico de vendas diárias com barras empilhadas."""
     if df.empty or 'Data' not in df.columns:
         return None
     
     df_sorted = df.sort_values('Data').copy()
+    
+    if df_sorted.empty:
+        return None
     
     df_melted = df_sorted.melt(
         id_vars=['Data', 'DataFormatada', 'Total'],
@@ -399,32 +357,37 @@ def create_advanced_daily_sales_chart(df):
         var_name='Método',
         value_name='Valor'
     )
+    
     df_melted = df_melted[df_melted['Valor'] > 0]
     
+    if df_melted.empty:
+        return None
+    
     bars = alt.Chart(df_melted).mark_bar(
-        size=25
+        size=20
     ).encode(
         x=alt.X(
             'Data:T',
             title='Data',
-            axis=alt.Axis(format='%d/%m', labelAngle=-45, labelFontSize=12)
+            axis=alt.Axis(format='%d/%m', labelAngle=-45, labelFontSize=10)
         ),
         y=alt.Y(
             'Valor:Q',
             title='Valor (R$)',
             stack='zero',
-            axis=alt.Axis(labelFontSize=12)
+            axis=alt.Axis(labelFontSize=10)
         ),
         color=alt.Color(
             'Método:N',
             scale=alt.Scale(range=CORES_MODO_ESCURO[:3]),
             legend=alt.Legend(
                 title="Método de Pagamento",
-                orient='bottom',  # LEGENDA ABAIXO
-                labelAlign='center',  # CENTRALIZADA
-                direction='horizontal',  # HORIZONTAL
-                titleFontSize=16,
-                labelFontSize=14
+                orient='bottom',
+                labelAlign='center',
+                direction='horizontal',
+                titleFontSize=14,
+                labelFontSize=12,
+                offset=10
             )
         ),
         tooltip=[
@@ -434,13 +397,13 @@ def create_advanced_daily_sales_chart(df):
         ]
     ).properties(
         title=alt.TitleParams(
-            text="📊 Vendas Diárias por Método de Pagamento",
-            fontSize=20,
+            text="Vendas Diárias por Método",
+            fontSize=16,
             anchor='start'
         ),
-        height=600,
-        width=1000,
-        padding={'bottom': 80}  # ESPAÇO PARA LEGENDA
+        height=350,
+        width=600,
+        padding={'bottom': 80}
     ).configure_view(
         stroke=None
     ).configure(
@@ -450,20 +413,41 @@ def create_advanced_daily_sales_chart(df):
     return bars
 
 def create_interactive_accumulation_chart(df):
-    """Cria um gráfico de área para acumulação de capital."""
+    """Gráfico de montanha que se desenvolve pelos dias."""
     if df.empty or 'Data' not in df.columns or 'Total' not in df.columns:
         return None
     
     df_accumulated = df.sort_values('Data').copy()
     df_accumulated['Total_Acumulado'] = df_accumulated['Total'].cumsum()
+    df_accumulated = df_accumulated.reset_index(drop=True)
+    df_accumulated['day_index'] = range(len(df_accumulated))
+    
+    if df_accumulated.empty:
+        return None
     
     max_value = df_accumulated['Total_Acumulado'].max()
     max_date = df_accumulated[df_accumulated['Total_Acumulado'] == max_value]['Data'].iloc[0]
     
-    area_chart = alt.Chart(df_accumulated).mark_area(
+    # Controle de animação
+    slider = alt.binding_range(
+        min=1, 
+        max=len(df_accumulated), 
+        step=1, 
+        name='Desenvolvimento por Dias: '
+    )
+    select_day = alt.selection_point(
+        name='day_selector', 
+        bind=slider, 
+        value=[{'day_index': len(df_accumulated)-1}]
+    )
+    
+    # Gráfico de área animado
+    area_chart = alt.Chart(df_accumulated).add_params(
+        select_day
+    ).mark_area(
         opacity=0.7,
         interpolate='monotone',
-        line={'color': CORES_MODO_ESCURO[0], 'strokeWidth': 4},
+        line={'color': CORES_MODO_ESCURO[0], 'strokeWidth': 3},
         color=alt.Gradient(
             gradient='linear',
             stops=[
@@ -489,37 +473,55 @@ def create_interactive_accumulation_chart(df):
             alt.Tooltip('Total:Q', title='Venda do Dia (R$)', format=',.2f'),
             alt.Tooltip('Total_Acumulado:Q', title='Acumulado (R$)', format=',.2f')
         ]
+    ).transform_filter(
+        alt.expr.datum.day_index <= select_day.day_index
     )
     
-    peak_point = alt.Chart(pd.DataFrame({
+    # Ponto do pico
+    peak_data = pd.DataFrame({
         'Data': [max_date],
         'Total_Acumulado': [max_value],
+        'day_index': [len(df_accumulated)-1],
         'Label': [f'Pico: R$ {max_value:,.0f}']
-    })).mark_circle(
-        size=300,
+    })
+    
+    peak_point = alt.Chart(peak_data).add_params(
+        select_day
+    ).mark_circle(
+        size=200,
         color=CORES_MODO_ESCURO[3],
         stroke='white',
-        strokeWidth=3
+        strokeWidth=2
     ).encode(
         x='Data:T',
         y='Total_Acumulado:Q',
+        opacity=alt.condition(
+            alt.expr.datum.day_index <= select_day.day_index,
+            alt.value(1.0),
+            alt.value(0.0)
+        ),
         tooltip=['Label:N']
     )
     
-    peak_text = alt.Chart(pd.DataFrame({
-        'Data': [max_date],
-        'Total_Acumulado': [max_value * 1.1],
-        'Label': [f'🎯 Pico: R$ {max_value:,.0f}']
-    })).mark_text(
+    # Texto do pico
+    peak_text = alt.Chart(peak_data).add_params(
+        select_day
+    ).mark_text(
         align='center',
         baseline='bottom',
-        fontSize=16,
+        fontSize=12,
         fontWeight='bold',
-        color=CORES_MODO_ESCURO[3]
+        color=CORES_MODO_ESCURO[3],
+        dy=-10
     ).encode(
         x='Data:T',
         y='Total_Acumulado:Q',
-        text='Label:N'
+        text=alt.value(f'🎯 Pico: R$ {max_value:,.0f}'),
+        opacity=alt.condition(
+            alt.expr.datum.day_index <= select_day.day_index,
+            alt.value(1.0),
+            alt.value(0.0)
+        )
     )
     
     combined_chart = alt.layer(
@@ -528,11 +530,11 @@ def create_interactive_accumulation_chart(df):
         peak_text
     ).properties(
         title=alt.TitleParams(
-            text="🏔️ Evolução do Capital Acumulado",
-            fontSize=20,
+            text="Evolução do Capital Acumulado",
+            fontSize=18,
             anchor='start'
         ),
-        height=600,
+        height=400,
         width=1000
     ).configure_view(
         stroke=None
@@ -543,7 +545,7 @@ def create_interactive_accumulation_chart(df):
     return combined_chart
 
 def create_enhanced_weekday_analysis(df):
-    """Cria análise de vendas por dia da semana - versão estável."""
+    """Cria análise de vendas por dia da semana."""
     if df.empty or 'DiaSemana' not in df.columns or 'Total' not in df.columns:
         return None, None
     
@@ -562,14 +564,12 @@ def create_enhanced_weekday_analysis(df):
     weekday_stats = weekday_stats.reindex([d for d in dias_semana_ordem if d in weekday_stats.index])
     weekday_stats = weekday_stats.reset_index()
     
-    # Calcular percentuais
     total_media_geral = weekday_stats['Média'].sum()
     if total_media_geral > 0:
         weekday_stats['Percentual_Media'] = (weekday_stats['Média'] / total_media_geral * 100).round(1)
     else:
         weekday_stats['Percentual_Media'] = 0
     
-    # SOLUÇÃO: Usar apenas um gráfico simples sem combinações problemáticas
     chart = alt.Chart(weekday_stats).mark_bar(
         color=CORES_MODO_ESCURO[0],
         cornerRadiusTopLeft=5,
@@ -594,12 +594,13 @@ def create_enhanced_weekday_analysis(df):
         ]
     ).properties(
         title=alt.TitleParams(
-            text="📊 Média de Vendas por Dia da Semana",
-            fontSize=20,
+            text="Média de Vendas por Dia da Semana",
+            fontSize=18,
             anchor='start'
         ),
-        height=500,
-        width=1000
+        height=400,
+        width=1000,
+        padding={'bottom': 80}
     ).configure_view(
         stroke=None
     ).configure(
@@ -611,7 +612,7 @@ def create_enhanced_weekday_analysis(df):
     return chart, best_day
 
 def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diários"):
-    """Cria histograma de distribuição de vendas."""
+    """Histograma animado que cresce ao abrir."""
     if df.empty or 'Total' not in df.columns or df['Total'].isnull().all():
         return None
     
@@ -619,7 +620,17 @@ def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diári
     if df_filtered_hist.empty:
         return None
     
-    histogram = alt.Chart(df_filtered_hist).mark_bar(
+    # Preparar dados para animação
+    df_filtered_hist = df_filtered_hist.reset_index()
+    df_filtered_hist['animation_frame'] = range(len(df_filtered_hist))
+    
+    # Controle de animação
+    slider = alt.binding_range(min=0, max=len(df_filtered_hist)-1, step=1, name='Crescimento do Histograma: ')
+    select_frame = alt.selection_point(name='frame', bind=slider, value=[{'animation_frame': len(df_filtered_hist)-1}])
+    
+    histogram = alt.Chart(df_filtered_hist).add_params(
+        select_frame
+    ).mark_bar(
         color=CORES_MODO_ESCURO[0],
         opacity=0.8,
         cornerRadiusTopLeft=5,
@@ -636,18 +647,26 @@ def create_sales_histogram(df, title="Distribuição dos Valores de Venda Diári
             title='Número de Dias (Frequência)',
             axis=alt.Axis(labelFontSize=12)
         ),
+        opacity=alt.condition(
+            alt.expr.datum.animation_frame <= select_frame.animation_frame,
+            alt.value(0.8),
+            alt.value(0.1)
+        ),
         tooltip=[
             alt.Tooltip("Total:Q", bin=True, title="Faixa de Valor (R$)", format=",.0f"),
             alt.Tooltip("count():Q", title="Número de Dias")
         ]
+    ).transform_filter(
+        alt.expr.datum.animation_frame <= select_frame.animation_frame
     ).properties(
         title=alt.TitleParams(
             text=title,
-            fontSize=20,
+            fontSize=18,
             anchor='start'
         ),
-        height=600,
-        width=1000
+        height=400,
+        width=1000,
+        padding={'bottom': 100}
     ).configure_view(
         stroke=None
     ).configure(
@@ -762,7 +781,7 @@ def create_dre_textual(resultados, df_filtered, selected_anos_filter):
     else:
         resultados_ano = resultados
 
-    # Cabeçalho centralizado - CORRIGIDO ALINHAMENTO
+    # Cabeçalho centralizado
     st.markdown(f"""
     <div style="text-align: center; margin-bottom: 30px;">
         <h3 style="margin: 0; font-weight: normal;">DEMONSTRAÇÃO DO RESULTADO DO EXERCÍCIO</h3>
@@ -920,11 +939,12 @@ def create_financial_dashboard_altair(resultados):
             ),
             legend=alt.Legend(
                 title="Tipo",
-                orient='bottom',  # LEGENDA ABAIXO
-                labelAlign='center',  # CENTRALIZADA
-                direction='horizontal',  # HORIZONTAL
+                orient='bottom',
+                labelAlign='center',
+                direction='horizontal',
                 titleFontSize=16,
-                labelFontSize=14
+                labelFontSize=14,
+                offset=10
             )
         ),
         tooltip=[
@@ -934,13 +954,13 @@ def create_financial_dashboard_altair(resultados):
         ]
     ).properties(
         title=alt.TitleParams(
-            text="💰 Composição do Resultado Financeiro",
+            text="Composição do Resultado Financeiro",
             fontSize=20,
             anchor='start'
         ),
         height=600,
         width=1000,
-        padding={'bottom': 80}  # ESPAÇO PARA LEGENDA
+        padding={'bottom': 80}
     ).configure_view(
         stroke=None
     ).configure(
@@ -951,7 +971,7 @@ def create_financial_dashboard_altair(resultados):
 
 # --- Dashboard Premium Functions ---
 def create_premium_kpi_cards(df):
-    """Cria cards KPI premium com CSS animado - VERSÃO CORRIGIDA"""
+    """Cria cards KPI premium usando st.columns - CORRIGIDO"""
     if df.empty:
         return
     
@@ -960,83 +980,47 @@ def create_premium_kpi_cards(df):
     melhor_dia = df.loc[df['Total'].idxmax(), 'DataFormatada'] if not df.empty else "N/A"
     crescimento = ((df['Total'].tail(7).mean() - df['Total'].head(7).mean()) / df['Total'].head(7).mean() * 100) if len(df) >= 14 else 15.5
     
-    # SOLUÇÃO: Usar st.columns em vez de HTML puro
+    # Usar st.columns para evitar problemas de renderização HTML
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.markdown(f"""
-        <div style="
-            text-align: center; 
-            padding: 1.5rem; 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            border-radius: 15px; 
-            color: white; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            margin-bottom: 1rem;
-        ">
-            <div style="font-size: 2.5rem; margin-bottom: 10px;">💰</div>
-            <h3 style="margin: 0; color: #64ffda; font-size: 1.2rem;">Faturamento Total</h3>
-            <h1 style="margin: 0.5rem 0; font-size: 2rem;">{format_brl(total_vendas)}</h1>
-            <p style="opacity: 0.8; margin: 0;">↗️ +{crescimento:.1f}% vs período anterior</p>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container():
+            st.markdown("💰", help="Faturamento Total")
+            st.metric(
+                label="Faturamento Total",
+                value=format_brl(total_vendas),
+                delta=f"+{crescimento:.1f}% vs período anterior"
+            )
     
     with col2:
-        st.markdown(f"""
-        <div style="
-            text-align: center; 
-            padding: 1.5rem; 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            border-radius: 15px; 
-            color: white; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            margin-bottom: 1rem;
-        ">
-            <div style="font-size: 2.5rem; margin-bottom: 10px;">📊</div>
-            <h3 style="margin: 0; color: #ff9800; font-size: 1.2rem;">Média Diária</h3>
-            <h1 style="margin: 0.5rem 0; font-size: 2rem;">{format_brl(media_diaria)}</h1>
-            <p style="opacity: 0.8; margin: 0;">↗️ +8.2% vs período anterior</p>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container():
+            st.markdown("📊", help="Média Diária")
+            st.metric(
+                label="Média Diária",
+                value=format_brl(media_diaria),
+                delta="+8.2% vs período anterior"
+            )
     
     with col3:
-        st.markdown(f"""
-        <div style="
-            text-align: center; 
-            padding: 1.5rem; 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            border-radius: 15px; 
-            color: white; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            margin-bottom: 1rem;
-        ">
-            <div style="font-size: 2.5rem; margin-bottom: 10px;">🏆</div>
-            <h3 style="margin: 0; color: #4caf50; font-size: 1.2rem;">Melhor Dia</h3>
-            <h1 style="margin: 0.5rem 0; font-size: 2rem;">{melhor_dia}</h1>
-            <p style="opacity: 0.8; margin: 0;">↗️ Maior faturamento</p>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container():
+            st.markdown("🏆", help="Melhor Dia")
+            st.metric(
+                label="Melhor Dia",
+                value=melhor_dia,
+                delta="Maior faturamento"
+            )
     
     with col4:
-        st.markdown(f"""
-        <div style="
-            text-align: center; 
-            padding: 1.5rem; 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            border-radius: 15px; 
-            color: white; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            margin-bottom: 1rem;
-        ">
-            <div style="font-size: 2.5rem; margin-bottom: 10px;">📈</div>
-            <h3 style="margin: 0; color: #e91e63; font-size: 1.2rem;">Tendência</h3>
-            <h1 style="margin: 0.5rem 0; font-size: 2rem;">+{crescimento:.1f}%</h1>
-            <p style="opacity: 0.8; margin: 0;">↗️ Crescimento sustentado</p>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container():
+            st.markdown("📈", help="Tendência")
+            st.metric(
+                label="Tendência",
+                value=f"+{crescimento:.1f}%",
+                delta="Crescimento sustentado"
+            )
 
 def create_premium_insights(df):
-    """Cria seção de insights inteligentes - VERSÃO CORRIGIDA"""
+    """Cria seção de insights inteligentes usando st.columns - CORRIGIDO"""
     if df.empty:
         return
     
@@ -1051,11 +1035,9 @@ def create_premium_insights(df):
         ultima_semana = df.tail(7)['Total'].mean()
         tendencia = ((ultima_semana - primeira_semana) / primeira_semana * 100) if primeira_semana > 0 else 0
         tendencia_texto = "crescimento" if tendencia > 0 else "declínio"
-        tendencia_cor = "#4caf50" if tendencia > 0 else "#f44336"
     else:
         tendencia = 0
         tendencia_texto = "estável"
-        tendencia_cor = "#ff9800"
     
     # Melhor método de pagamento
     if all(col in df.columns for col in ['Cartão', 'Dinheiro', 'Pix']):
@@ -1070,76 +1052,25 @@ def create_premium_insights(df):
         melhor_metodo = "N/A"
         percentual_melhor = 0
     
-    # SOLUÇÃO: Usar st.columns em vez de HTML grid complexo
-    st.markdown("""
-    <div style="
-        background: linear-gradient(135deg, #1e3c72, #2a5298); 
-        padding: 2rem; 
-        border-radius: 15px; 
-        color: white; 
-        margin: 1rem 0;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-    ">
-        <h2 style="color: #64ffda; margin: 0 0 1.5rem 0; text-align: center;">🧠 Insights Inteligentes Automáticos</h2>
-    </div>
-    """, unsafe_allow_html=True)
+    st.subheader("🧠 Insights Inteligentes Automáticos")
     
-    # Usar colunas do Streamlit para layout
+    # Usar st.columns para layout
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown(f"""
-        <div style="
-            background: rgba(255,255,255,0.1); 
-            padding: 1.5rem; 
-            border-radius: 10px; 
-            margin: 1rem 0;
-            border-left: 4px solid {tendencia_cor};
-        ">
-            <h4 style="color: {tendencia_cor}; margin: 0 0 1rem 0;">📈 Análise de Tendência</h4>
-            <p style="margin: 0; line-height: 1.6; color: white;">
-                Suas vendas apresentam uma tendência de <strong>{tendencia_texto}</strong> 
-                de <strong style="color: {tendencia_cor};">{abs(tendencia):.1f}%</strong> 
-                comparando as últimas duas semanas.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container():
+            st.markdown("### 📈 Análise de Tendência")
+            st.write(f"Suas vendas apresentam uma tendência de **{tendencia_texto}** de **{abs(tendencia):.1f}%** comparando as últimas duas semanas.")
     
     with col2:
-        st.markdown(f"""
-        <div style="
-            background: rgba(255,255,255,0.1); 
-            padding: 1.5rem; 
-            border-radius: 10px; 
-            margin: 1rem 0;
-            border-left: 4px solid #4caf50;
-        ">
-            <h4 style="color: #4caf50; margin: 0 0 1rem 0;">💡 Recomendação Estratégica</h4>
-            <p style="margin: 0; line-height: 1.6; color: white;">
-                O método <strong>{melhor_metodo}</strong> representa 
-                <strong>{percentual_melhor:.1f}%</strong> das vendas. 
-                Considere incentivar este meio de pagamento.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container():
+            st.markdown("### 💡 Recomendação Estratégica")
+            st.write(f"O método **{melhor_metodo}** representa **{percentual_melhor:.1f}%** das vendas. Considere incentivar este meio de pagamento.")
     
     with col3:
-        st.markdown(f"""
-        <div style="
-            background: rgba(255,255,255,0.1); 
-            padding: 1.5rem; 
-            border-radius: 10px; 
-            margin: 1rem 0;
-            border-left: 4px solid #e91e63;
-        ">
-            <h4 style="color: #e91e63; margin: 0 0 1rem 0;">🎯 Meta Sugerida</h4>
-            <p style="margin: 0; line-height: 1.6; color: white;">
-                Com base na média atual de <strong>{format_brl(media_diaria)}</strong> por dia, 
-                uma meta de <strong>{format_brl(media_diaria * 1.15)}</strong> 
-                representaria um crescimento de 15%.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container():
+            st.markdown("### 🎯 Meta Sugerida")
+            st.write(f"Com base na média atual de **{format_brl(media_diaria)}** por dia, uma meta de **{format_brl(media_diaria * 1.15)}** representaria um crescimento de 15%.")
 
 # Função para formatar valores em moeda brasileira
 def format_brl(value):
@@ -1147,7 +1078,7 @@ def format_brl(value):
 
 # --- Interface Principal da Aplicação ---
 def main():
-    # Título
+    # Título (SEM BOX LARANJA)
     try:
         col_logo, col_title = st.columns([2, 7])
         with col_logo:
@@ -1333,7 +1264,7 @@ def main():
             # Layout em colunas para melhor aproveitamento do espaço
             col_metrics1, col_metrics2, col_metrics3 = st.columns(3)
 
-            with col_metrics1:
+                        with col_metrics1:
                 st.metric("🔢 Total de Registros", f"{total_registros}")
                 st.metric("⬆️ Maior Venda Diária", format_brl(maior_venda_diaria))
 
@@ -1707,70 +1638,43 @@ def main():
 
     # --- TAB5: DASHBOARD PREMIUM ---
     with tab5:
-        # Header do Dashboard Premium
-        st.markdown("""
-        <div class="dashboard-header">
-            <h1 style="margin: 0; font-size: 3rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🚀 DASHBOARD PREMIUM</h1>
-            <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9;">Análise Executiva com Insights Inteligentes</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.header("🚀 Dashboard Premium")
         
         if not df_filtered.empty:
-            # KPIs Premium
+            # KPIs Premium usando st.columns (sem HTML complexo)
             create_premium_kpi_cards(df_filtered)
             
             st.markdown("---")
             
-            # Gráficos lado a lado com MESMO TAMANHO - CORRIGIDO
-            st.markdown('<div class="premium-charts-grid">', unsafe_allow_html=True)
-            
-            col_chart1, col_chart2 = st.columns(2)
+            # Gráficos lado a lado - 2/3 para vendas diárias, 1/3 para pizza
+            col_chart1, col_chart2 = st.columns([2, 1])
             
             with col_chart1:
-                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                # Gráfico de vendas diárias - TAMANHO AJUSTADO
+                # Gráfico de vendas diárias (2/3 do espaço)
                 daily_chart = create_advanced_daily_sales_chart(df_filtered)
                 if daily_chart:
-                    # Ajustar tamanho para ser igual ao pizza
-                    daily_chart = daily_chart.properties(height=500, width=500)
                     st.altair_chart(daily_chart, use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
             
             with col_chart2:
-                st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-                # Gráfico de pizza - TAMANHO MANTIDO
+                # Gráfico de pizza animado (1/3 do espaço)
                 pie_chart = create_enhanced_payment_pie_chart(df_filtered)
                 if pie_chart:
                     st.altair_chart(pie_chart, use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
             
             st.markdown("---")
             
-            # Gráfico de acumulação em tela cheia - LARGURA DOS DOIS SOMADOS
-            st.markdown('<div class="premium-chart-full chart-container">', unsafe_allow_html=True)
+            # Gráfico de acumulação em tela cheia
             accumulation_chart = create_interactive_accumulation_chart(df_filtered)
             if accumulation_chart:
-                # Ajustar largura para ocupar espaço dos dois gráficos acima
-                accumulation_chart = accumulation_chart.properties(height=600, width=1200)
                 st.altair_chart(accumulation_chart, use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
             
             st.markdown("---")
             
-            # Insights Inteligentes
+            # Insights Inteligentes usando st.columns (sem HTML complexo)
             create_premium_insights(df_filtered)
             
         else:
-            st.markdown("""
-            <div class="premium-card">
-                <h2 style="text-align: center; color: #ff9800;">⚠️ Sem Dados Disponíveis</h2>
-                <p style="text-align: center; font-size: 1.2rem;">
-                    Ajuste os filtros na sidebar ou registre algumas vendas para visualizar o dashboard premium.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+            st.warning("⚠️ Sem dados disponíveis. Ajuste os filtros na sidebar ou registre algumas vendas para visualizar o dashboard premium.")
 
 # --- Ponto de Entrada da Aplicação ---
 if __name__ == "__main__":

@@ -1264,7 +1264,7 @@ def main():
             # Layout em colunas para melhor aproveitamento do espaço
             col_metrics1, col_metrics2, col_metrics3 = st.columns(3)
 
-                        with col_metrics1:
+            with col_metrics1:
                 st.metric("🔢 Total de Registros", f"{total_registros}")
                 st.metric("⬆️ Maior Venda Diária", format_brl(maior_venda_diaria))
 

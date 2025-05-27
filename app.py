@@ -411,9 +411,9 @@ def create_advanced_daily_sales_chart(df):
     )
     
     return bars
-
+    
 def create_interactive_accumulation_chart(df):
-    """Gráfico de montanha que se desenvolve pelos dias."""
+    """Gráfico de montanha que se desenvolve pelos dias - CORRIGIDO."""
     if df.empty or 'Data' not in df.columns or 'Total' not in df.columns:
         return None
     
@@ -441,7 +441,7 @@ def create_interactive_accumulation_chart(df):
         value=[{'day_index': len(df_accumulated)-1}]
     )
     
-    # Gráfico de área animado
+    # Gráfico de área animado - CORREÇÃO: usar alt.datum em vez de alt.expr.datum
     area_chart = alt.Chart(df_accumulated).add_params(
         select_day
     ).mark_area(
@@ -474,7 +474,8 @@ def create_interactive_accumulation_chart(df):
             alt.Tooltip('Total_Acumulado:Q', title='Acumulado (R$)', format=',.2f')
         ]
     ).transform_filter(
-        alt.expr.datum.day_index <= select_day.day_index
+        # CORREÇÃO: usar sintaxe correta do Altair
+        alt.datum.day_index <= alt.expr('day_selector.day_index')
     )
     
     # Ponto do pico
@@ -496,7 +497,8 @@ def create_interactive_accumulation_chart(df):
         x='Data:T',
         y='Total_Acumulado:Q',
         opacity=alt.condition(
-            alt.expr.datum.day_index <= select_day.day_index,
+            # CORREÇÃO: usar sintaxe correta do Altair
+            alt.datum.day_index <= alt.expr('day_selector.day_index'),
             alt.value(1.0),
             alt.value(0.0)
         ),
@@ -518,7 +520,8 @@ def create_interactive_accumulation_chart(df):
         y='Total_Acumulado:Q',
         text=alt.value(f'🎯 Pico: R$ {max_value:,.0f}'),
         opacity=alt.condition(
-            alt.expr.datum.day_index <= select_day.day_index,
+            # CORREÇÃO: usar sintaxe correta do Altair
+            alt.datum.day_index <= alt.expr('day_selector.day_index'),
             alt.value(1.0),
             alt.value(0.0)
         )

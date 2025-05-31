@@ -899,122 +899,7 @@ def create_premium_kpi_cards(df):
                 label="📈 Tendência (Últimas 2 Semanas)",
                 value=f"{crescimento:+.1f}%",
                 delta="Crescimento" if crescimento > 0 else "Estável/Declínio" if crescimento == 0 else "Declínio"
-            )
-
-def create_premium_insights(df):
-    """Insights com bordas coloridas na lateral esquerda."""
-    if df.empty:
-        return
-    
-    # Calcular insights automáticos
-    total_vendas = df['Total'].sum()
-    dias_trabalhados = len(df)
-    media_diaria = total_vendas / dias_trabalhados if dias_trabalhados > 0 else 0
-    
-    # Análise de tendência
-    if len(df) >= 14:
-        primeira_semana = df.head(7)['Total'].mean()
-        ultima_semana = df.tail(7)['Total'].mean()
-        tendencia = ((ultima_semana - primeira_semana) / primeira_semana * 100) if primeira_semana > 0 else 0
-        tendencia_texto = "crescimento" if tendencia > 5 else "declínio" if tendencia < -5 else "estabilidade"
-        tendencia_cor = "#4caf50" if tendencia > 5 else "#f44336" if tendencia < -5 else "#ff9800"
-    else:
-        tendencia = 0
-        tendencia_texto = "dados insuficientes"
-        tendencia_cor = "#9e9e9e"
-    
-    # Melhor método de pagamento
-    if all(col in df.columns for col in ['Cartão', 'Dinheiro', 'Pix']) and total_vendas > 0:
-        metodos = {
-            'Cartão': df['Cartão'].sum(),
-            'Dinheiro': df['Dinheiro'].sum(),
-            'PIX': df['Pix'].sum()
-        }
-        # Filtrar métodos com valor > 0 antes de encontrar o max
-        metodos_validos = {k: v for k, v in metodos.items() if v > 0}
-        if metodos_validos:
-            melhor_metodo = max(metodos_validos, key=metodos_validos.get)
-            percentual_melhor = (metodos_validos[melhor_metodo] / total_vendas * 100)
-        else:
-            melhor_metodo = "N/A"
-            percentual_melhor = 0
-    else:
-        melhor_metodo = "N/A"
-        percentual_melhor = 0
-    
-    st.subheader("🧠 Insights Inteligentes Automáticos")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown(f"""
-        <div style="
-            background: rgba(255,255,255,0.1); 
-            padding: 1.5rem; 
-            border-radius: 10px; 
-            margin: 1rem 0;
-            border-left: 4px solid {tendencia_cor};
-            min-height: 150px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        ">
-            <h4 style="color: {tendencia_cor}; margin: 0 0 1rem 0;">📈 Análise de Tendência</h4>
-            <p style="margin: 0; line-height: 1.6; color: white;">
-                Comparando as últimas duas semanas, suas vendas apresentam 
-                <strong>{tendencia_texto}</strong> 
-                (<strong style="color: {tendencia_cor};">{tendencia:+.1f}%</strong>).
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown(f"""
-        <div style="
-            background: rgba(255,255,255,0.1); 
-            padding: 1.5rem; 
-            border-radius: 10px; 
-            margin: 1rem 0;
-            border-left: 4px solid #4caf50;
-            min-height: 150px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        ">
-            <h4 style="color: #4caf50; margin: 0 0 1rem 0;">💡 Recomendação Estratégica</h4>
-            <p style="margin: 0; line-height: 1.6; color: white;">
-                O método <strong>{melhor_metodo}</strong> representa 
-                <strong>{percentual_melhor:.1f}%</strong> das vendas. 
-                {
-
-Considere incentivar este meio de pagamento.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f"""
-        <div style="
-            background: rgba(255,255,255,0.1); 
-            padding: 1.5rem; 
-            border-radius: 10px; 
-            margin: 1rem 0;
-            border-left: 4px solid #e91e63;
-            min-height: 150px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        ">
-            <h4 style="color: #e91e63; margin: 0 0 1rem 0;">🎯 Meta Sugerida</h4>
-            <p style="margin: 0; line-height: 1.6; color: white;">
-                Com base na média atual de <strong>{format_brl(media_diaria)}</strong> por dia, 
-                uma meta de <strong>{format_brl(media_diaria * 1.15)}</strong> 
-                representaria um crescimento de 15%.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-# --- NOVA FUNÇÃO: Gráfico Heatmap de Atividade ---
+    A FUNÇÃO: Gráfico Heatmap de Atividade ---
 def create_activity_heatmap(df_input):
     """Cria um gráfico de heatmap estilo GitHub para a atividade de vendas."""
     if df_input.empty or 'Data' not in df_input.columns or 'Total' not in df_input.columns:
@@ -1828,8 +1713,6 @@ def main():
             
             st.markdown("---")
             
-            # Insights Inteligentes
-            create_premium_insights(df_filtered)
             
         else:
             st.warning("⚠️ Sem dados disponíveis. Ajuste os filtros na sidebar ou registre algumas vendas para visualizar o dashboard premium.")

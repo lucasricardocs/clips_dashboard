@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
 import pandas as pd
@@ -899,7 +900,8 @@ def create_premium_kpi_cards(df):
                 label="📈 Tendência (Últimas 2 Semanas)",
                 value=f"{crescimento:+.1f}%",
                 delta="Crescimento" if crescimento > 0 else "Estável/Declínio" if crescimento == 0 else "Declínio"
-    A FUNÇÃO: Gráfico Heatmap de Atividade ---
+            )
+# --- NOVA FUNÇÃO: Gráfico Heatmap de Atividade ---
 def create_activity_heatmap(df_input):
     """Cria um gráfico de heatmap estilo GitHub para a atividade de vendas."""
     if df_input.empty or 'Data' not in df_input.columns or 'Total' not in df_input.columns:

@@ -62,27 +62,27 @@ def inject_enhanced_mobile_css():
             max-width: 100%;
         }
 
-        /* Logo Container com Efeito de Fogo - CORRIGIDO */
+        /* Logo Container com Efeito de Fogo */
         .logo-fire-container {
             position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
             margin: 2rem auto;
-            height: 280px;  /* Aumentado para acomodar melhor */
+            height: 280px;
             width: 100%;
-            max-width: 400px;  /* Largura máxima definida */
-            overflow: visible;  /* Mudado para visible */
+            max-width: 400px;
+            overflow: visible;
         }
 
-        /* Logo Principal - CORRIGIDA */
+        /* Logo Principal */
         .fire-logo {
             position: relative;
             z-index: 10;
             max-width: 200px;
-            width: auto;  /* Mudado para auto */
-            height: auto;  /* Mantém proporção */
-            object-fit: contain;  /* Garante que a imagem não seja cortada */
+            width: auto;
+            height: auto;
+            object-fit: contain;
             filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.8));
             animation: logoFloat 3s ease-in-out infinite;
             display: block;
@@ -101,16 +101,16 @@ def inject_enhanced_mobile_css():
             }
         }
 
-        /* Container das Chamas - AJUSTADO */
+        /* Container das Chamas */
         .fire-container {
             position: absolute;
-            bottom: -30px;  /* Ajustado para não interferir na logo */
+            bottom: -30px;
             left: 50%;
             transform: translateX(-50%);
             width: 300px;
-            height: 180px;  /* Reduzido ligeiramente */
+            height: 180px;
             z-index: 1;
-            pointer-events: none;  /* Evita interferência */
+            pointer-events: none;
         }
 
         /* Chamas Individuais */
@@ -169,7 +169,7 @@ def inject_enhanced_mobile_css():
             animation-delay: 0.1s;
         }
 
-        /* Partículas de Fogo - EXPANDIDO */
+        /* Partículas de Fogo */
         .fire-particle {
             position: absolute;
             border-radius: 50%;
@@ -242,7 +242,7 @@ def inject_enhanced_mobile_css():
             }
         }
 
-        /* Animações das Partículas - MELHORADAS */
+        /* Animações das Partículas */
         @keyframes particle-rise {
             0% {
                 bottom: 0;
@@ -351,7 +351,7 @@ def inject_enhanced_mobile_css():
             }
         }
 
-        /* Títulos H2 - SEM LINHAS */
+        /* Títulos H2 */
         h2 {
             color: #f1f5f9;
             font-size: 1.4rem;
@@ -574,9 +574,9 @@ def read_sales_data(_gc):
         st.error(f"Erro ao ler ou processar dados da planilha: {e}")
         return pd.DataFrame()
 
-# --- Função para criar heatmap mensal estilo GitHub CORRIGIDA --- #
+# --- Função para criar heatmap mensal estilo GitHub --- #
 def create_monthly_activity_heatmap(df_month, mes_nome, ano):
-    """Cria um heatmap estilo GitHub para o mês selecionado - CORRIGIDO PARA VCONCAT."""
+    """Cria um heatmap estilo GitHub para o mês selecionado."""
     if df_month.empty or 'Data' not in df_month.columns or 'Total' not in df_month.columns:
         return None
     
@@ -656,7 +656,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         ).reset_index()
         week_labels['week_label'] = 'S' + (week_labels['week_corrected'] + 1).astype(str)
 
-        # Labels das semanas - SEM CONFIGURAÇÕES
+        # Labels das semanas
         weeks_chart = alt.Chart(week_labels).mark_text(
             align='center',
             baseline='bottom',
@@ -689,7 +689,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         else:
             domain_values = [0.01, max_value * 0.25, max_value * 0.5, max_value * 0.75]
 
-        # Heatmap principal - SEM CONFIGURAÇÕES
+        # Heatmap principal
         heatmap = alt.Chart(full_df).mark_rect(
             stroke='#475569',
             strokeWidth=5,
@@ -737,7 +737,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
             )
         )
 
-        # Combinar gráficos - APLICAR CONFIGURAÇÕES AQUI
+        # Combinar gráficos
         final_chart = alt.vconcat(
             weeks_chart,
             heatmap,
@@ -745,9 +745,9 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         ).resolve_scale(
             color='independent'
         ).configure_view(
-            strokeWidth=0  # Configuração aplicada no nível superior
+            strokeWidth=0
         ).configure(
-            background='transparent'  # Configuração aplicada no nível superior
+            background='transparent'
         )
 
         return final_chart
@@ -853,7 +853,7 @@ def main():
         st.warning("Não foi possível carregar os dados da planilha ou ela está vazia.")
         return
 
-    # --- Logo com Animação de Fogo Espetacular --- #
+    # --- Logo com Animação de Fogo --- #
     st.markdown(f"""
     <div class="logo-fire-container">
         <img src="{LOGO_URL}" class="fire-logo" alt="Clips Burger Logo">
@@ -862,22 +862,16 @@ def main():
             <div class="flame flame-orange"></div>
             <div class="flame flame-yellow"></div>
             <div class="flame flame-white"></div>
-            
-            <!-- Partículas Pequenas -->
             <div class="fire-particle small"></div>
             <div class="fire-particle small"></div>
             <div class="fire-particle small"></div>
             <div class="fire-particle small"></div>
             <div class="fire-particle small"></div>
-            
-            <!-- Partículas Médias -->
             <div class="fire-particle medium"></div>
             <div class="fire-particle medium"></div>
             <div class="fire-particle medium"></div>
             <div class="fire-particle medium"></div>
             <div class="fire-particle medium"></div>
-            
-            <!-- Partículas Grandes -->
             <div class="fire-particle large"></div>
             <div class="fire-particle large"></div>
             <div class="fire-particle large"></div>
@@ -997,7 +991,7 @@ def main():
     if not df_filtered_month.empty:
         # Verificar se há dados suficientes para gráficos
         if len(df_filtered_month) > 0:
-            # Heatmap estilo GitHub mensal (CORRIGIDO)
+            # Heatmap estilo GitHub mensal
             heatmap_chart = create_monthly_activity_heatmap(df_filtered_month, mes_selecionado_nome, ano_selecionado)
             if heatmap_chart:
                 st.altair_chart(heatmap_chart, use_container_width=True)

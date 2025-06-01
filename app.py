@@ -262,9 +262,9 @@ def read_sales_data(_gc):
         st.error(f"Erro ao ler ou processar dados da planilha: {e}")
         return pd.DataFrame()
 
-# --- Função para criar heatmap mensal estilo GitHub com cores CINZA/VERDE --- #
+# --- Função para criar heatmap mensal estilo GitHub com cores CINZA/VERDE e TEXTOS --- #
 def create_monthly_activity_heatmap(df_month, mes_nome, ano):
-    """Cria um heatmap estilo GitHub para o mês selecionado - CORES CINZA/VERDE."""
+    """Cria um heatmap estilo GitHub para o mês selecionado - COM TEXTOS E STROKE 5."""
     if df_month.empty or 'Data' not in df_month.columns or 'Total' not in df_month.columns:
         return None
     
@@ -338,6 +338,24 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         # Calcular semana
         full_df['week_corrected'] = ((full_df['Data'] - start_date).dt.days // 7)
 
+        # Criar labels das semanas
+        week_labels = full_df.groupby('week_corrected').agg(
+            start_date=('Data', 'min')
+        ).reset_index()
+        week_labels['week_label'] = 'S' + (week_labels['week_corrected'] + 1).astype(str)
+
+        # Labels das semanas
+        weeks_chart = alt.Chart(week_labels).mark_text(
+            align='center',
+            baseline='bottom',
+            fontSize=10,
+            dy=-5,
+            color='#94a3b8'
+        ).encode(
+            x=alt.X('week_corrected:O', axis=None),
+            text='week_label:N'
+        )
+
         # Tooltip
         tooltip_fields = [
             alt.Tooltip('Data:T', title='Data', format='%d/%m/%Y'),
@@ -359,43 +377,79 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         else:
             domain_values = [0.01, max_value * 0.25, max_value * 0.5, max_value * 0.75]
 
-        # Heatmap principal - CORES CINZA/VERDE E STROKE 2
+        # Heatmap principal - COM EIXOS E STROKE 5
         heatmap = alt.Chart(full_df).mark_rect(
             stroke='#334155',  # Cor da borda
-            strokeWidth=2,     # Largura da borda = 2
+            strokeWidth=5,     # Largura da borda = 5
             cornerRadius=2
         ).encode(
-            x=alt.X('week_corrected:O', axis=None),
+            x=alt.X('week_corrected:O',
+                    title="Semanas do Mês", 
+                    axis=alt.Axis(
+                        labelColor='#94a3b8',
+                        titleColor='#94a3b8',
+                        grid=False
+                    )),
             y=alt.Y('day_display_name:N', 
                     sort=day_display_names,
-                    axis=None),
+                    title="Dia da Semana",
+                    axis=alt.Axis(
+                        labelAngle=0, 
+                        labelFontSize=11, 
+                        ticks=False, 
+                        domain=False, 
+                        grid=False, 
+                        labelColor='#94a3b8',
+                        titleColor='#94a3b8'
+                    )),
             color=alt.Color('display_total:Q',
                 scale=alt.Scale(
-                    # NOVA PALETA: Cinza claro -> Verde claro -> Verde escuro
+                    # Paleta cinza/verde
                     range=['#e5e7eb', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
                     type='threshold',
                     domain=domain_values
                 ),
-                legend=None),
+                legend=alt.Legend(
+                    title="Vendas (R$)",
+                    titleColor='#94a3b8',
+                    labelColor='#94a3b8',
+                    orient='bottom'
+                )),
             tooltip=tooltip_fields
         ).properties(
             height=180,
-            width=350
+            width=350,
+            title=alt.TitleParams(
+                text=f'Calendário de Vendas - {mes_nome} {ano}',
+                color='#cbd5e1',
+                fontSize=14
+            )
         ).configure_view(
             stroke=None
         ).configure(
             background='transparent'
         )
 
-        return heatmap
+        # Combinar gráficos
+        final_chart = alt.vconcat(
+            weeks_chart,
+            heatmap,
+            spacing=5
+        ).configure_view(
+            strokeWidth=0
+        ).configure(
+            background='transparent'
+        )
+
+        return final_chart
         
     except Exception as e:
         st.error(f"Erro ao criar heatmap mensal: {e}")
         return None
 
-# --- Funções de Gráficos SEM TEXTOS --- #
+# --- Funções de Gráficos COM TEXTOS E STROKE 5 --- #
 def create_cumulative_chart_mobile(df_month):
-    """Gráfico de área acumulado para o mês selecionado - SEM TEXTOS."""
+    """Gráfico de área acumulado para o mês selecionado - COM TEXTOS E STROKE 5."""
     try:
         if df_month.empty:
             return None
@@ -405,7 +459,7 @@ def create_cumulative_chart_mobile(df_month):
         
         chart = alt.Chart(df_month).mark_area(
             interpolate="monotone",
-            line={"color": CORES_MODO_ESCURO[0], "strokeWidth": 2},
+            line={"color": CORES_MODO_ESCURO[0], "strokeWidth": 5},  # STROKE 5
             color=alt.Gradient(
                 gradient="linear",
                 stops=[
@@ -415,17 +469,22 @@ def create_cumulative_chart_mobile(df_month):
                 x1=1, x2=1, y1=1, y2=0
             )
         ).encode(
-            x=alt.X("Dia:O", axis=None),  # Remove todo o eixo X
-            y=alt.Y("Total_Acumulado:Q", axis=None),  # Remove todo o eixo Y
+            x=alt.X("Dia:O", 
+                   axis=alt.Axis(title="Dia do Mês", labelAngle=0, labelColor="#94a3b8", 
+                                titleColor="#94a3b8", gridColor="#334155")),
+            y=alt.Y("Total_Acumulado:Q", 
+                   axis=alt.Axis(title="Acumulado (R$)", labelColor="#94a3b8", 
+                                titleColor="#94a3b8", gridColor="#334155")),
             tooltip=[
                 alt.Tooltip("Data:T", title="Data", format="%d/%m/%Y"),
                 alt.Tooltip("Total:Q", title="Venda Dia (R$)", format=",.2f"),
                 alt.Tooltip("Total_Acumulado:Q", title="Acumulado (R$)", format=",.2f")
             ]
         ).properties(
-            height=300
+            height=300,
+            title=alt.TitleParams(text="Vendas Acumuladas do Mês", color="#cbd5e1")
         ).configure_view(
-            stroke=None  # Remove borda
+            stroke=None
         ).configure(
             background="transparent"
         )
@@ -435,25 +494,32 @@ def create_cumulative_chart_mobile(df_month):
         return None
 
 def create_daily_sales_chart_mobile(df_month):
-    """Gráfico de barras de vendas diárias para o mês selecionado - SEM TEXTOS."""
+    """Gráfico de barras de vendas diárias para o mês selecionado - COM TEXTOS E STROKE 5."""
     try:
         if df_month.empty:
             return None
         
         chart = alt.Chart(df_month).mark_bar(
             color=CORES_MODO_ESCURO[1], 
-            size=15
+            size=15,
+            stroke='#334155',  # Cor da borda das barras
+            strokeWidth=5      # Largura da borda = 5
         ).encode(
-            x=alt.X("Dia:O", axis=None),  # Remove todo o eixo X
-            y=alt.Y("Total:Q", axis=None),  # Remove todo o eixo Y
+            x=alt.X("Dia:O", 
+                   axis=alt.Axis(title="Dia do Mês", labelAngle=0, labelColor="#94a3b8", 
+                                titleColor="#94a3b8", gridColor="#334155")),
+            y=alt.Y("Total:Q", 
+                   axis=alt.Axis(title="Venda Diária (R$)", labelColor="#94a3b8", 
+                                titleColor="#94a3b8", gridColor="#334155")),
             tooltip=[
                 alt.Tooltip("Data:T", title="Data", format="%d/%m/%Y"),
                 alt.Tooltip("Total:Q", title="Venda (R$)", format=",.2f")
             ]
         ).properties(
-            height=300
+            height=300,
+            title=alt.TitleParams(text="Vendas Diárias", color="#cbd5e1")
         ).configure_view(
-            stroke=None  # Remove borda
+            stroke=None
         ).configure(
             background="transparent"
         )
@@ -593,7 +659,7 @@ def main():
     if not df_filtered_month.empty:
         # Verificar se há dados suficientes para gráficos
         if len(df_filtered_month) > 0:
-            # Heatmap estilo GitHub mensal (CORES CINZA/VERDE)
+            # Heatmap estilo GitHub mensal (CORES CINZA/VERDE COM TEXTOS E STROKE 5)
             heatmap_chart = create_monthly_activity_heatmap(df_filtered_month, mes_selecionado_nome, ano_selecionado)
             if heatmap_chart:
                 st.altair_chart(heatmap_chart, use_container_width=True)

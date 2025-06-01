@@ -61,13 +61,31 @@ def inject_mobile_dark_css():
             max-width: 100%; /* Ocupar toda a largura no mobile */
         }
 
-        /* Centralizar Logo */
+        /* Logo responsiva para mobile */
         div.block-container img {
             display: block;
             margin-left: auto;
             margin-right: auto;
-            margin-bottom: 1.5rem; /* Espaçamento abaixo da logo */
-            max-width: 10px; /* Ajuste o tamanho máximo da logo se necessário */
+            margin-bottom: 1.5rem;
+            max-width: 200px;        /* Tamanho máximo da logo */
+            width: 60%;             /* 60% da largura do container */
+            height: auto;           /* Mantém proporção */
+        }
+
+        /* Ajuste específico para telas muito pequenas */
+        @media screen and (max-width: 480px) {
+            div.block-container img {
+                max-width: 150px;   /* Logo menor em telas pequenas */
+                width: 50%;         /* 50% da largura em mobile */
+            }
+        }
+
+        /* Ajuste para telas médias (tablets) */
+        @media screen and (min-width: 481px) and (max-width: 768px) {
+            div.block-container img {
+                max-width: 180px;
+                width: 55%;
+            }
         }
 
         /* Títulos H2 */
@@ -170,6 +188,15 @@ def inject_mobile_dark_css():
             color: #e2e8f0; /* Cor do texto da célula */
         }
 
+        /* Heatmap Calendar Styling */
+        .heatmap-container {
+            background-color: #1e293b;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+            border: 1px solid #334155;
+        }
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -215,7 +242,7 @@ def read_sales_data(_gc):
             return pd.DataFrame()
 
         df = pd.DataFrame(rows)
-
+        
         # Processamento e limpeza
         for col in ["Cartão", "Dinheiro", "Pix"]:
             if col in df.columns:
@@ -253,6 +280,100 @@ def read_sales_data(_gc):
     except Exception as e:
         st.error(f"Erro ao ler ou processar dados da planilha: {e}")
         return pd.DataFrame()
+
+# --- Função para criar heatmap estilo GitHub --- #
+def create_github_heatmap(df_month, mes_nome, ano):
+    """Cria um heatmap estilo GitHub calendar para o mês selecionado."""
+    if df_month.empty:
+        return None
+    
+    # Criar um DataFrame completo para todos os dias do mês
+    primeiro_dia = datetime(ano, df_month['Mês'].iloc[0], 1)
+    if df_month['Mês'].iloc[0] == 12:
+        ultimo_dia = datetime(ano + 1, 1, 1) - timedelta(days=1)
+    else:
+        ultimo_dia = datetime(ano, df_month['Mês'].iloc[0] + 1, 1) - timedelta(days=1)
+    
+    # Criar range de datas para o mês completo
+    datas_mes = pd.date_range(start=primeiro_dia, end=ultimo_dia, freq='D')
+    df_completo = pd.DataFrame({'Data': datas_mes})
+    df_completo['Dia'] = df_completo['Data'].dt.day
+    df_completo['DiaSemana'] = df_completo['Data'].dt.dayofweek
+    df_completo['Semana'] = ((df_completo['Data'].dt.day - 1) // 7)
+    
+    # Mapear dias da semana para nomes
+    dias_semana_map = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sáb', 6: 'Dom'}
+    df_completo['DiaSemanaTexto'] = df_completo['DiaSemana'].map(dias_semana_map)
+    
+    # Fazer merge com os dados de vendas
+    df_vendas_agrupado = df_month.groupby('Dia')['Total'].sum().reset_index()
+    df_heatmap = df_completo.merge(df_vendas_agrupado, on='Dia', how='left')
+    df_heatmap['Total'] = df_heatmap['Total'].fillna(0)
+    
+    # Ajustar a semana para começar no domingo (padrão GitHub)
+    df_heatmap['DiaSemana'] = (df_heatmap['DiaSemana'] + 1) % 7
+    df_heatmap['DiaSemanaTexto'] = df_heatmap['DiaSemana'].map({
+        0: 'Dom', 1: 'Seg', 2: 'Ter', 3: 'Qua', 4: 'Qui', 5: 'Sex', 6: 'Sáb'
+    })
+    
+    # Calcular a semana baseada no primeiro domingo do mês
+    primeiro_domingo = primeiro_dia
+    while primeiro_domingo.weekday() != 6:  # 6 = domingo
+        primeiro_domingo -= timedelta(days=1)
+    
+    df_heatmap['Semana'] = ((df_heatmap['Data'] - primeiro_domingo).dt.days // 7)
+    
+    # Criar o heatmap
+    heatmap = alt.Chart(df_heatmap).mark_rect(
+        stroke='#334155',
+        strokeWidth=1
+    ).encode(
+        x=alt.X('Semana:O', 
+                axis=alt.Axis(
+                    title='Semanas do Mês',
+                    labelColor='#94a3b8',
+                    titleColor='#94a3b8',
+                    grid=False
+                )),
+        y=alt.Y('DiaSemanaTexto:O', 
+                scale=alt.Scale(domain=['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']),
+                axis=alt.Axis(
+                    title='Dia da Semana',
+                    labelColor='#94a3b8',
+                    titleColor='#94a3b8',
+                    grid=False
+                )),
+        color=alt.Color('Total:Q',
+                       scale=alt.Scale(
+                           range=['#1e293b', '#0f4c75', '#3282b8', '#4c78a8', '#6bb6ff'],
+                           domain=[0, df_heatmap['Total'].max()]
+                       ),
+                       legend=alt.Legend(
+                           title="Vendas (R$)",
+                           titleColor='#94a3b8',
+                           labelColor='#94a3b8',
+                           orient='bottom'
+                       )),
+        tooltip=[
+            alt.Tooltip('Data:T', title='Data', format='%d/%m/%Y'),
+            alt.Tooltip('DiaSemanaTexto:N', title='Dia da Semana'),
+            alt.Tooltip('Total:Q', title='Vendas (R$)', format=',.2f')
+        ]
+    ).properties(
+        width=300,
+        height=150,
+        title=alt.TitleParams(
+            text=f'Calendário de Vendas - {mes_nome} {ano}',
+            color='#cbd5e1',
+            fontSize=14
+        )
+    ).configure_view(
+        stroke=None
+    ).configure(
+        background='transparent'
+    )
+    
+    return heatmap
 
 # --- Funções de Gráficos (Otimizadas para Mobile) --- #
 def create_cumulative_chart_mobile(df_month):
@@ -312,8 +433,8 @@ def main():
         st.warning("Não foi possível carregar os dados da planilha ou ela está vazia.")
         return
 
-    # --- Logo Centralizada --- #
-    st.image(LOGO_URL, use_column_width='auto') # 'auto' ou width em pixels
+    # --- Logo Centralizada (CORRIGIDA) --- #
+    st.image(LOGO_URL, use_container_width=False, width=200)
 
     # --- Filtros de Mês e Ano --- #
     anos_disponiveis = sorted(df_all["Ano"].unique(), reverse=True)
@@ -386,7 +507,7 @@ def main():
     with kpi_cols[1]:
         st.metric(label="Média Diária no Mês", value=format_brl(avg_daily_month), help=f"Baseado em {days_in_data} dias com vendas no mês.")
 
-    # Resumo Mensal do Ano Selecionado
+    # --- Resumo Mensal do Ano Selecionado ---
     st.header(f"🗓️ Faturamento Mensal ({ano_selecionado})")
     if not df_filtered_year.empty:
         monthly_revenue = df_filtered_year.groupby("Mês")["Total"].sum().reset_index()
@@ -396,7 +517,6 @@ def main():
         monthly_revenue['Total'] = monthly_revenue['Total'].fillna(0)
 
         with st.container(border=False):
-             #st.markdown('<div class="monthly-summary-container">', unsafe_allow_html=True)
              if not monthly_revenue.empty:
                  for _, row in monthly_revenue.iterrows():
                      st.markdown(f"""
@@ -407,7 +527,6 @@ def main():
                      """, unsafe_allow_html=True)
              else:
                  st.markdown('<div class="monthly-summary-item"><span>Nenhum dado para o ano.</span><span></span></div>', unsafe_allow_html=True)
-             st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.info(f"Sem dados de vendas registrados para o ano de {ano_selecionado}.")
 
@@ -425,6 +544,11 @@ def main():
     # Gráficos do Mês Selecionado
     st.header(f"📈 Gráficos - {mes_selecionado_nome} / {ano_selecionado}")
     if not df_filtered_month.empty:
+        # Heatmap estilo GitHub (NOVO)
+        heatmap_chart = create_github_heatmap(df_filtered_month, mes_selecionado_nome, ano_selecionado)
+        if heatmap_chart:
+            st.altair_chart(heatmap_chart, use_container_width=True)
+        
         cumulative_chart = create_cumulative_chart_mobile(df_filtered_month)
         if cumulative_chart:
             st.altair_chart(cumulative_chart, use_container_width=True)

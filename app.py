@@ -61,60 +61,6 @@ def inject_mobile_dark_css():
             max-width: 100%;
         }
 
-        /* Logo responsiva e animada - CORRIGIDO */
-        div.block-container img {
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-            margin-bottom: 1.5rem;
-            max-width: 200px !important;
-            width: 60%;
-            height: auto;
-            /* Animação da logo */
-            animation: logoEntrance 2s ease-out forwards;
-            opacity: 0;
-            transform: translateY(-20px) scale(0.8);
-        }
-
-        /* Animação de entrada da logo */
-        @keyframes logoEntrance {
-            0% {
-                opacity: 0;
-                transform: translateY(-30px) scale(0.8) rotate(-5deg);
-            }
-            50% {
-                opacity: 0.7;
-                transform: translateY(-10px) scale(0.95) rotate(2deg);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1) rotate(0deg);
-            }
-        }
-
-        /* Efeito hover na logo */
-        div.block-container img:hover {
-            transform: scale(1.05) rotate(2deg);
-            transition: transform 0.3s ease-in-out;
-            filter: brightness(1.1);
-        }
-
-        /* Ajuste específico para telas muito pequenas */
-        @media screen and (max-width: 480px) {
-            div.block-container img {
-                max-width: 150px;
-                width: 50%;
-            }
-        }
-
-        /* Ajuste para telas médias (tablets) */
-        @media screen and (min-width: 481px) and (max-width: 768px) {
-            div.block-container img {
-                max-width: 180px;
-                width: 55%;
-            }
-        }
-
         /* Títulos H2 */
         h2 {
             color: #cbd5e1;
@@ -196,6 +142,40 @@ def inject_mobile_dark_css():
         }
         .stDataFrame tbody td {
             color: #e2e8f0;
+        }
+
+        /* Logo centralizada com animação */
+        .centered-logo {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 200px;
+            width: 100%;
+            height: auto;
+            animation: logoEntrance 2s ease-out forwards;
+            opacity: 0;
+            transform: translateY(-20px) scale(0.8);
+        }
+        
+        @keyframes logoEntrance {
+            0% {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.8) rotate(-5deg);
+            }
+            50% {
+                opacity: 0.7;
+                transform: translateY(-10px) scale(0.95) rotate(2deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1) rotate(0deg);
+            }
+        }
+        
+        .centered-logo:hover {
+            transform: scale(1.05) rotate(2deg);
+            transition: transform 0.3s ease-in-out;
+            filter: brightness(1.1);
         }
 
     </style>
@@ -282,11 +262,10 @@ def read_sales_data(_gc):
         st.error(f"Erro ao ler ou processar dados da planilha: {e}")
         return pd.DataFrame()
 
-# --- Função para criar heatmap mensal estilo GitHub --- #
+# --- Função para criar heatmap mensal estilo GitHub com cores CINZA/VERDE --- #
 def create_monthly_activity_heatmap(df_month, mes_nome, ano):
-    """Cria um heatmap estilo GitHub para o mês selecionado baseado no modelo fornecido."""
+    """Cria um heatmap estilo GitHub para o mês selecionado - CORES CINZA/VERDE."""
     if df_month.empty or 'Data' not in df_month.columns or 'Total' not in df_month.columns:
-        st.info("Dados insuficientes para gerar o heatmap de atividade mensal.")
         return None
     
     try:
@@ -307,15 +286,15 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         start_date = primeiro_dia - pd.Timedelta(days=days_before)
         
         # Garantir que terminamos no domingo da última semana
-        days_after = 6 - ultimo_dia.weekday()  # Quantos dias faltam para chegar ao domingo
-        if days_after < 6:  # Se não é domingo, adicionar dias
+        days_after = 6 - ultimo_dia.weekday()
+        if days_after < 6:
             end_date = ultimo_dia + pd.Timedelta(days=days_after)
         else:
             end_date = ultimo_dia
         
         all_dates = pd.date_range(start=start_date, end=end_date, freq='D')
 
-        # DataFrame com todas as datas (incluindo dias antes e depois do mês)
+        # DataFrame com todas as datas
         full_df = pd.DataFrame({'Data': all_dates})
         
         # Marcar quais datas são do mês atual
@@ -324,187 +303,99 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
             (full_df['Data'].dt.month == df_month['Mês'].iloc[0])
         )
         
-        # Verificar e mapear nomes de colunas corretos
-        possible_cartao_names = ['Cartao', 'Cartão', 'cartao', 'cartão', 'CARTAO', 'CARTÃO']
-        cartao_col = None
-        for col_name in possible_cartao_names:
-            if col_name in df_month.columns:
-                cartao_col = col_name
-                break
-        
-        possible_dinheiro_names = ['Dinheiro', 'dinheiro', 'DINHEIRO']
-        dinheiro_col = None
-        for col_name in possible_dinheiro_names:
-            if col_name in df_month.columns:
-                dinheiro_col = col_name
-                break
-        
-        possible_pix_names = ['Pix', 'PIX', 'pix']
-        pix_col = None
-        for col_name in possible_pix_names:
-            if col_name in df_month.columns:
-                pix_col = col_name
-                break
-
-        # Certificar que as colunas existem antes de mergear
+        # Merge com dados de vendas
         cols_to_merge = ['Data', 'Total']
-        if cartao_col:
-            cols_to_merge.append(cartao_col)
-        if dinheiro_col:
-            cols_to_merge.append(dinheiro_col)
-        if pix_col:
-            cols_to_merge.append(pix_col)
+        if 'Cartão' in df_month.columns:
+            cols_to_merge.append('Cartão')
+        if 'Dinheiro' in df_month.columns:
+            cols_to_merge.append('Dinheiro')
+        if 'Pix' in df_month.columns:
+            cols_to_merge.append('Pix')
         
         cols_present = [col for col in cols_to_merge if col in df_month.columns]
         full_df = full_df.merge(df_month[cols_present], on='Data', how='left')
         
-        # Preencher NaNs e padronizar nomes das colunas
-        if cartao_col and cartao_col in full_df.columns:
-            full_df['Cartao'] = full_df[cartao_col].fillna(0)
-        else:
-            full_df['Cartao'] = 0
+        # Preencher NaNs
+        for col in ['Total', 'Cartão', 'Dinheiro', 'Pix']:
+            if col in full_df.columns:
+                full_df[col] = full_df[col].fillna(0)
+            else:
+                full_df[col] = 0
         
-        if dinheiro_col and dinheiro_col in full_df.columns:
-            full_df['Dinheiro'] = full_df[dinheiro_col].fillna(0)
-        else:
-            full_df['Dinheiro'] = 0
-        
-        if pix_col and pix_col in full_df.columns:
-            full_df['Pix'] = full_df[pix_col].fillna(0)
-        else:
-            full_df['Pix'] = 0
-        
-        # Garantir que Total existe
-        if 'Total' not in full_df.columns:
-            full_df['Total'] = 0
-        else:
-            full_df['Total'] = full_df['Total'].fillna(0)
-        
-        # Para dias que não são do mês atual, definir como None apenas para visualização
+        # Para dias que não são do mês atual, definir como None
         full_df['display_total'] = full_df['Total'].copy()
         mask_not_current_month = ~full_df['is_current_month']
         full_df.loc[mask_not_current_month, 'display_total'] = None
 
-        # Mapear os nomes dos dias (ordem fixa)
-        full_df['day_of_week'] = full_df['Data'].dt.weekday  # 0=segunda, 6=domingo
+        # Mapear os nomes dos dias
+        full_df['day_of_week'] = full_df['Data'].dt.weekday
         day_name_map = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sáb', 6: 'Dom'}
         full_df['day_display_name'] = full_df['day_of_week'].map(day_name_map)
         
-        # Ordem fixa dos dias para exibição
+        # Ordem fixa dos dias
         day_display_names = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
         
-        # Recalcular week baseado na primeira data
+        # Calcular semana
         full_df['week_corrected'] = ((full_df['Data'] - start_date).dt.days // 7)
-        
-        # Encontrar a primeira semana de cada semana para os rótulos
-        week_labels = full_df[full_df['is_current_month']].groupby('week_corrected').agg(
-            start_date_week=('Data', 'min')
-        ).reset_index()
-        week_labels['week_label'] = 'S' + (week_labels['week_corrected'] + 1).astype(str)
 
-        # Labels das semanas
-        weeks_chart = alt.Chart(week_labels).mark_text(
-            align='center',
-            baseline='bottom',
-            fontSize=10,
-            dy=-5,
-            color='#94a3b8'
-        ).encode(
-            x=alt.X('week_corrected:O', axis=None),
-            text='week_label:N'
-        )
-
-        # Construir tooltip dinamicamente baseado nas colunas disponíveis
+        # Tooltip
         tooltip_fields = [
             alt.Tooltip('Data:T', title='Data', format='%d/%m/%Y'),
             alt.Tooltip('day_display_name:N', title='Dia'),
             alt.Tooltip('Total:Q', title='Total Vendas (R$)', format=',.2f')
         ]
         
-        # Adicionar campos de pagamento apenas se existirem
-        if 'Cartao' in full_df.columns and full_df['Cartao'].sum() > 0:
-            tooltip_fields.append(alt.Tooltip('Cartao:Q', title='Cartão (R$)', format=',.2f'))
-        if 'Dinheiro' in full_df.columns and full_df['Dinheiro'].sum() > 0:
+        if full_df['Cartão'].sum() > 0:
+            tooltip_fields.append(alt.Tooltip('Cartão:Q', title='Cartão (R$)', format=',.2f'))
+        if full_df['Dinheiro'].sum() > 0:
             tooltip_fields.append(alt.Tooltip('Dinheiro:Q', title='Dinheiro (R$)', format=',.2f'))
-        if 'Pix' in full_df.columns and full_df['Pix'].sum() > 0:
+        if full_df['Pix'].sum() > 0:
             tooltip_fields.append(alt.Tooltip('Pix:Q', title='Pix (R$)', format=',.2f'))
 
-        # Determinar domínio da escala baseado nos dados do mês
+        # Domínio da escala baseado nos dados do mês
         max_value = full_df[full_df['is_current_month']]['Total'].max()
         if pd.isna(max_value) or max_value == 0:
             domain_values = [0.01, 500, 1000, 1500]
         else:
             domain_values = [0.01, max_value * 0.25, max_value * 0.5, max_value * 0.75]
 
-        # Gráfico principal (heatmap)
+        # Heatmap principal - CORES CINZA/VERDE E STROKE 2
         heatmap = alt.Chart(full_df).mark_rect(
-            stroke='#334155',
-            strokeWidth=1,
+            stroke='#334155',  # Cor da borda
+            strokeWidth=2,     # Largura da borda = 2
             cornerRadius=2
         ).encode(
-            x=alt.X('week_corrected:O',
-                    title=None, 
-                    axis=None),
+            x=alt.X('week_corrected:O', axis=None),
             y=alt.Y('day_display_name:N', 
                     sort=day_display_names,
-                    title=None,
-                    axis=alt.Axis(
-                        labelAngle=0, 
-                        labelFontSize=11, 
-                        ticks=False, 
-                        domain=False, 
-                        grid=False, 
-                        labelColor='#94a3b8'
-                    )),
+                    axis=None),
             color=alt.Color('display_total:Q',
                 scale=alt.Scale(
-                    range=['#1e293b', '#0f4c75', '#3282b8', '#4c78a8', '#6bb6ff'],
+                    # NOVA PALETA: Cinza claro -> Verde claro -> Verde escuro
+                    range=['#e5e7eb', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
                     type='threshold',
                     domain=domain_values
                 ),
-                legend=alt.Legend(
-                    title="Vendas (R$)",
-                    titleColor='#94a3b8',
-                    labelColor='#94a3b8',
-                    orient='bottom',
-                    direction='horizontal'
-                )),
+                legend=None),
             tooltip=tooltip_fields
         ).properties(
             height=180,
             width=350
-        )
-
-        # Combinar gráfico final
-        final_chart = alt.vconcat(
-            weeks_chart,
-            heatmap,
-            spacing=5
         ).configure_view(
-            strokeWidth=0
-        ).configure_concat(
-            spacing=5
-        ).properties(
-            title=alt.TitleParams(
-                text=f'Atividade de Vendas - {mes_nome} {ano}',
-                fontSize=16,
-                anchor='start',
-                color='#cbd5e1',
-                dy=-10
-            )
+            stroke=None
         ).configure(
             background='transparent'
         )
 
-        return final_chart
+        return heatmap
         
     except Exception as e:
         st.error(f"Erro ao criar heatmap mensal: {e}")
         return None
 
-# --- Funções de Gráficos (Corrigidas) --- #
+# --- Funções de Gráficos SEM TEXTOS --- #
 def create_cumulative_chart_mobile(df_month):
-    """Gráfico de área acumulado para o mês selecionado."""
+    """Gráfico de área acumulado para o mês selecionado - SEM TEXTOS."""
     try:
         if df_month.empty:
             return None
@@ -524,22 +415,17 @@ def create_cumulative_chart_mobile(df_month):
                 x1=1, x2=1, y1=1, y2=0
             )
         ).encode(
-            x=alt.X("Dia:O", 
-                   axis=alt.Axis(title="Dia do Mês", labelAngle=0, labelColor="#94a3b8", 
-                                titleColor="#94a3b8", gridColor="#334155")),
-            y=alt.Y("Total_Acumulado:Q", 
-                   axis=alt.Axis(title="Acumulado (R$)", labelColor="#94a3b8", 
-                                titleColor="#94a3b8", gridColor="#334155")),
+            x=alt.X("Dia:O", axis=None),  # Remove todo o eixo X
+            y=alt.Y("Total_Acumulado:Q", axis=None),  # Remove todo o eixo Y
             tooltip=[
                 alt.Tooltip("Data:T", title="Data", format="%d/%m/%Y"),
                 alt.Tooltip("Total:Q", title="Venda Dia (R$)", format=",.2f"),
                 alt.Tooltip("Total_Acumulado:Q", title="Acumulado (R$)", format=",.2f")
             ]
         ).properties(
-            height=300,
-            title=alt.TitleParams(text="Vendas Acumuladas do Mês", color="#cbd5e1")
+            height=300
         ).configure_view(
-            stroke=None
+            stroke=None  # Remove borda
         ).configure(
             background="transparent"
         )
@@ -549,7 +435,7 @@ def create_cumulative_chart_mobile(df_month):
         return None
 
 def create_daily_sales_chart_mobile(df_month):
-    """Gráfico de barras de vendas diárias para o mês selecionado."""
+    """Gráfico de barras de vendas diárias para o mês selecionado - SEM TEXTOS."""
     try:
         if df_month.empty:
             return None
@@ -558,21 +444,16 @@ def create_daily_sales_chart_mobile(df_month):
             color=CORES_MODO_ESCURO[1], 
             size=15
         ).encode(
-            x=alt.X("Dia:O", 
-                   axis=alt.Axis(title="Dia do Mês", labelAngle=0, labelColor="#94a3b8", 
-                                titleColor="#94a3b8", gridColor="#334155")),
-            y=alt.Y("Total:Q", 
-                   axis=alt.Axis(title="Venda Diária (R$)", labelColor="#94a3b8", 
-                                titleColor="#94a3b8", gridColor="#334155")),
+            x=alt.X("Dia:O", axis=None),  # Remove todo o eixo X
+            y=alt.Y("Total:Q", axis=None),  # Remove todo o eixo Y
             tooltip=[
                 alt.Tooltip("Data:T", title="Data", format="%d/%m/%Y"),
                 alt.Tooltip("Total:Q", title="Venda (R$)", format=",.2f")
             ]
         ).properties(
-            height=300,
-            title=alt.TitleParams(text="Vendas Diárias", color="#cbd5e1")
+            height=300
         ).configure_view(
-            stroke=None
+            stroke=None  # Remove borda
         ).configure(
             background="transparent"
         )
@@ -597,8 +478,10 @@ def main():
         st.warning("Não foi possível carregar os dados da planilha ou ela está vazia.")
         return
 
-    # --- Logo Centralizada com Efeito (CORRIGIDA) --- #
-    st.image(LOGO_URL, use_container_width=False, width=200)
+    # --- Logo Centralizada com Efeito --- #
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown(f'<img src="{LOGO_URL}" class="centered-logo">', unsafe_allow_html=True)
 
     # --- Filtros de Mês e Ano --- #
     anos_disponiveis = sorted(df_all["Ano"].unique(), reverse=True)
@@ -710,7 +593,7 @@ def main():
     if not df_filtered_month.empty:
         # Verificar se há dados suficientes para gráficos
         if len(df_filtered_month) > 0:
-            # Heatmap estilo GitHub mensal (NOVO)
+            # Heatmap estilo GitHub mensal (CORES CINZA/VERDE)
             heatmap_chart = create_monthly_activity_heatmap(df_filtered_month, mes_selecionado_nome, ano_selecionado)
             if heatmap_chart:
                 st.altair_chart(heatmap_chart, use_container_width=True)

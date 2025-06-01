@@ -695,7 +695,7 @@ def create_cumulative_chart_mobile(df_month):
         
         chart = alt.Chart(df_month).mark_area(
             interpolate="monotone",
-            line={"color": CORES_MODO_ESCURO[0], "strokeWidth": 5},
+            line={"color": CORES_MODO_ESCURO[0], "strokeWidth": 2},
             color=alt.Gradient(
                 gradient="linear",
                 stops=[
@@ -738,8 +738,8 @@ def create_daily_sales_chart_mobile(df_month):
         chart = alt.Chart(df_month).mark_bar(
             color=CORES_MODO_ESCURO[1], 
             size=15,
-            stroke='#475569',
-            strokeWidth=5
+            stroke='#f0f0f0',
+            strokeWidth=2
         ).encode(
             x=alt.X("Dia:O", 
                    axis=alt.Axis(title="Dia do Mês", labelAngle=0, labelColor="#cbd5e1", 

@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Configuração de tema para gráficos - CORRIGIDO
+# Configuração de tema para gráficos
 alt.data_transformers.enable("json")
 alt.data_transformers.disable_max_rows()
 
@@ -35,8 +35,8 @@ CORES_MODO_ESCURO = ["#4c78a8", "#54a24b", "#f58518", "#e45756", "#72b7b2", "#ff
 meses_ordem = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 meses_dict = {nome: i+1 for i, nome in enumerate(meses_ordem)}
 
-# --- CSS Customizado para App-Like Mobile Dark --- #
-def inject_mobile_dark_css():
+# --- CSS Customizado Melhorado com Animação de Fogo --- #
+def inject_enhanced_mobile_css():
     st.markdown("""
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
@@ -47,9 +47,10 @@ def inject_mobile_dark_css():
 
         /* Body/App Background */
         html, body, .stApp {
-            background: #0f172a !important;
-            color: #e2e8f0;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
+            color: #f8fafc;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
         }
 
         /* Main content padding */
@@ -61,127 +62,337 @@ def inject_mobile_dark_css():
             max-width: 100%;
         }
 
-        /* Títulos H2 */
+        /* Logo Container com Efeito de Fogo */
+        .logo-fire-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0;
+            height: 250px;
+            overflow: hidden;
+        }
+
+        /* Logo Principal */
+        .fire-logo {
+            position: relative;
+            z-index: 10;
+            max-width: 200px;
+            width: 60%;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.8));
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+
+        /* Animação de Flutuação da Logo */
+        @keyframes logoFloat {
+            0%, 100% {
+                transform: translateY(0px) scale(1);
+                filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.8));
+            }
+            50% {
+                transform: translateY(-10px) scale(1.05);
+                filter: drop-shadow(0 0 30px rgba(255, 140, 0, 1));
+            }
+        }
+
+        /* Container das Chamas */
+        .fire-container {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 200px;
+            z-index: 1;
+        }
+
+        /* Chamas Individuais */
+        .flame {
+            position: absolute;
+            bottom: 0;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            transform-origin: center bottom;
+            animation: flicker 0.5s ease-in-out infinite alternate;
+        }
+
+        /* Chama Principal (Vermelha) */
+        .flame-red {
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 120px;
+            background: radial-gradient(circle, #ff4500 0%, #ff6347 30%, #dc143c 70%, #8b0000 100%);
+            box-shadow: 0 0 30px #ff4500, 0 0 60px #ff6347, 0 0 90px #dc143c;
+            animation: flicker 0.8s ease-in-out infinite alternate;
+        }
+
+        /* Chama Laranja */
+        .flame-orange {
+            left: 45%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 90px;
+            background: radial-gradient(circle, #ffa500 0%, #ff8c00 50%, #ff4500 100%);
+            box-shadow: 0 0 25px #ffa500, 0 0 50px #ff8c00;
+            animation: flicker 0.6s ease-in-out infinite alternate;
+            animation-delay: 0.2s;
+        }
+
+        /* Chama Amarela */
+        .flame-yellow {
+            left: 55%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 70px;
+            background: radial-gradient(circle, #ffff00 0%, #ffd700 50%, #ffa500 100%);
+            box-shadow: 0 0 20px #ffff00, 0 0 40px #ffd700;
+            animation: flicker 0.4s ease-in-out infinite alternate;
+            animation-delay: 0.4s;
+        }
+
+        /* Chama Branca (Centro) */
+        .flame-white {
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 50px;
+            background: radial-gradient(circle, #ffffff 0%, #ffff99 50%, #ffd700 100%);
+            box-shadow: 0 0 15px #ffffff, 0 0 30px #ffff99;
+            animation: flicker 0.3s ease-in-out infinite alternate;
+            animation-delay: 0.1s;
+        }
+
+        /* Partículas de Fogo */
+        .fire-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ff6347;
+            border-radius: 50%;
+            animation: particle-rise 2s linear infinite;
+        }
+
+        .fire-particle:nth-child(1) { left: 20%; animation-delay: 0s; }
+        .fire-particle:nth-child(2) { left: 40%; animation-delay: 0.5s; }
+        .fire-particle:nth-child(3) { left: 60%; animation-delay: 1s; }
+        .fire-particle:nth-child(4) { left: 80%; animation-delay: 1.5s; }
+
+        /* Animação das Chamas */
+        @keyframes flicker {
+            0% {
+                transform: translateX(-50%) rotate(-2deg) scaleY(1);
+                opacity: 0.8;
+            }
+            25% {
+                transform: translateX(-50%) rotate(1deg) scaleY(1.1);
+                opacity: 0.9;
+            }
+            50% {
+                transform: translateX(-50%) rotate(-1deg) scaleY(0.95);
+                opacity: 1;
+            }
+            75% {
+                transform: translateX(-50%) rotate(2deg) scaleY(1.05);
+                opacity: 0.85;
+            }
+            100% {
+                transform: translateX(-50%) rotate(-1deg) scaleY(1);
+                opacity: 0.9;
+            }
+        }
+
+        /* Animação das Partículas */
+        @keyframes particle-rise {
+            0% {
+                bottom: 0;
+                opacity: 1;
+                transform: translateX(0);
+            }
+            100% {
+                bottom: 150px;
+                opacity: 0;
+                transform: translateX(20px);
+            }
+        }
+
+        /* Títulos H2 - SEM LINHAS */
         h2 {
-            color: #cbd5e1;
-            font-size: 1.2rem;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 0.5rem;
-            margin-top: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        /* Metric card styling */
-        .stMetric {
-            background-color: #1e293b;
-            padding: 1rem;
-            border-radius: 0.75rem;
-            margin-bottom: 1rem;
-            border: 1px solid #334155;
-        }
-        .stMetric > label {
-            color: #94a3b8;
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
-        }
-        .stMetric > div[data-testid="stMetricValue"] {
             color: #f1f5f9;
-            font-size: 1.8rem;
+            font-size: 1.4rem;
             font-weight: 600;
-            line-height: 1.2;
-        }
-        .stMetric > div[data-testid="stMetricDelta"] {
-            font-size: 0.8rem;
-            color: #64748b;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            /* REMOVIDO: border-bottom */
         }
 
-        /* Monthly summary styling */
+        /* Metric cards melhorados */
+        .stMetric {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #475569;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stMetric:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .stMetric > label {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .stMetric > div[data-testid="stMetricValue"] {
+            color: #f8fafc;
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .stMetric > div[data-testid="stMetricDelta"] {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        /* Monthly summary melhorado */
         .monthly-summary-item {
             display: flex;
             justify-content: space-between;
-            padding: 0.4rem 0;
-            border-bottom: 1px solid #334155;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #374151;
+            transition: background-color 0.2s ease;
         }
+
+        .monthly-summary-item:hover {
+            background-color: rgba(55, 65, 81, 0.3);
+            border-radius: 0.5rem;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+
         .monthly-summary-item:last-child {
             border-bottom: none;
         }
+
         .monthly-summary-month {
-            color: #cbd5e1;
-            font-weight: 500;
-        }
-        .monthly-summary-value {
-            color: #f1f5f9;
-            font-weight: 600;
-        }
-
-        /* Chart container styling */
-        .stAltairChart {
-             background-color: #1e293b;
-             padding: 1rem;
-             border-radius: 0.75rem;
-             margin-top: 1rem;
-             border: 1px solid #334155;
-        }
-
-        /* Tabela de Vendas Diárias */
-        .stDataFrame {
-            background-color: #1e293b;
-            border-radius: 0.75rem;
-            border: 1px solid #334155;
-            margin-top: 1rem;
-        }
-        .stDataFrame thead th {
-            background-color: #334155;
             color: #e2e8f0;
+            font-weight: 600;
+            font-size: 1rem;
         }
+
+        .monthly-summary-value {
+            color: #f8fafc;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Chart containers melhorados */
+        .stAltairChart {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin-top: 1.5rem;
+            border: 1px solid #475569;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .stAltairChart:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Tabela melhorada */
+        .stDataFrame {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 1rem;
+            border: 1px solid #475569;
+            margin-top: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .stDataFrame thead th {
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+            color: #f8fafc;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
         .stDataFrame tbody tr:nth-child(even) {
-            background-color: #1e293b;
+            background-color: rgba(30, 41, 59, 0.5);
         }
+
         .stDataFrame tbody tr:nth-child(odd) {
-            background-color: #283447;
+            background-color: rgba(51, 65, 85, 0.3);
         }
+
+        .stDataFrame tbody tr:hover {
+            background-color: rgba(71, 85, 105, 0.4);
+        }
+
         .stDataFrame tbody td {
             color: #e2e8f0;
+            font-weight: 500;
         }
 
-        /* Logo centralizada com animação */
-        .centered-logo {
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-            max-width: 200px;
-            width: 100%;
-            height: auto;
-            animation: logoEntrance 2s ease-out forwards;
-            opacity: 0;
-            transform: translateY(-20px) scale(0.8);
+        /* Selectbox melhorado */
+        .stSelectbox > div > div {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border: 1px solid #475569;
+            border-radius: 0.75rem;
+            color: #f8fafc;
         }
-        
-        @keyframes logoEntrance {
-            0% {
-                opacity: 0;
-                transform: translateY(-30px) scale(0.8) rotate(-5deg);
+
+        /* Responsividade melhorada */
+        @media screen and (max-width: 480px) {
+            .fire-logo {
+                max-width: 150px;
+                width: 50%;
             }
-            50% {
-                opacity: 0.7;
-                transform: translateY(-10px) scale(0.95) rotate(2deg);
+            
+            .fire-container {
+                width: 250px;
+                height: 150px;
             }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1) rotate(0deg);
+            
+            .flame-red {
+                width: 60px;
+                height: 90px;
             }
-        }
-        
-        .centered-logo:hover {
-            transform: scale(1.05) rotate(2deg);
-            transition: transform 0.3s ease-in-out;
-            filter: brightness(1.1);
+            
+            .flame-orange {
+                width: 45px;
+                height: 70px;
+            }
+            
+            .flame-yellow {
+                width: 30px;
+                height: 50px;
+            }
+            
+            .flame-white {
+                width: 20px;
+                height: 35px;
+            }
         }
 
     </style>
     """, unsafe_allow_html=True)
 
-inject_mobile_dark_css()
+inject_enhanced_mobile_css()
 
 # --- Funções de Cache e Acesso ao Google Sheets --- #
 @st.cache_resource
@@ -262,9 +473,9 @@ def read_sales_data(_gc):
         st.error(f"Erro ao ler ou processar dados da planilha: {e}")
         return pd.DataFrame()
 
-# --- Função para criar heatmap mensal estilo GitHub com cores CINZA/VERDE e TEXTOS --- #
+# --- Função para criar heatmap mensal estilo GitHub --- #
 def create_monthly_activity_heatmap(df_month, mes_nome, ano):
-    """Cria um heatmap estilo GitHub para o mês selecionado - COM TEXTOS E STROKE 5."""
+    """Cria um heatmap estilo GitHub para o mês selecionado."""
     if df_month.empty or 'Data' not in df_month.columns or 'Total' not in df_month.columns:
         return None
     
@@ -350,7 +561,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
             baseline='bottom',
             fontSize=10,
             dy=-5,
-            color='#94a3b8'
+            color='#cbd5e1'
         ).encode(
             x=alt.X('week_corrected:O', axis=None),
             text='week_label:N'
@@ -377,17 +588,17 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         else:
             domain_values = [0.01, max_value * 0.25, max_value * 0.5, max_value * 0.75]
 
-        # Heatmap principal - COM EIXOS E STROKE 5
+        # Heatmap principal
         heatmap = alt.Chart(full_df).mark_rect(
-            stroke='#334155',  # Cor da borda
-            strokeWidth=5,     # Largura da borda = 5
+            stroke='#475569',
+            strokeWidth=5,
             cornerRadius=2
         ).encode(
             x=alt.X('week_corrected:O',
                     title="Semanas do Mês", 
                     axis=alt.Axis(
-                        labelColor='#94a3b8',
-                        titleColor='#94a3b8',
+                        labelColor='#cbd5e1',
+                        titleColor='#f1f5f9',
                         grid=False
                     )),
             y=alt.Y('day_display_name:N', 
@@ -399,20 +610,19 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
                         ticks=False, 
                         domain=False, 
                         grid=False, 
-                        labelColor='#94a3b8',
-                        titleColor='#94a3b8'
+                        labelColor='#cbd5e1',
+                        titleColor='#f1f5f9'
                     )),
             color=alt.Color('display_total:Q',
                 scale=alt.Scale(
-                    # Paleta cinza/verde
                     range=['#e5e7eb', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
                     type='threshold',
                     domain=domain_values
                 ),
                 legend=alt.Legend(
                     title="Vendas (R$)",
-                    titleColor='#94a3b8',
-                    labelColor='#94a3b8',
+                    titleColor='#f1f5f9',
+                    labelColor='#cbd5e1',
                     orient='bottom'
                 )),
             tooltip=tooltip_fields
@@ -421,7 +631,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
             width=350,
             title=alt.TitleParams(
                 text=f'Calendário de Vendas - {mes_nome} {ano}',
-                color='#cbd5e1',
+                color='#f1f5f9',
                 fontSize=14
             )
         ).configure_view(
@@ -447,9 +657,9 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         st.error(f"Erro ao criar heatmap mensal: {e}")
         return None
 
-# --- Funções de Gráficos COM TEXTOS E STROKE 5 --- #
+# --- Funções de Gráficos --- #
 def create_cumulative_chart_mobile(df_month):
-    """Gráfico de área acumulado para o mês selecionado - COM TEXTOS E STROKE 5."""
+    """Gráfico de área acumulado para o mês selecionado."""
     try:
         if df_month.empty:
             return None
@@ -459,7 +669,7 @@ def create_cumulative_chart_mobile(df_month):
         
         chart = alt.Chart(df_month).mark_area(
             interpolate="monotone",
-            line={"color": CORES_MODO_ESCURO[0], "strokeWidth": 5},  # STROKE 5
+            line={"color": CORES_MODO_ESCURO[0], "strokeWidth": 5},
             color=alt.Gradient(
                 gradient="linear",
                 stops=[
@@ -470,11 +680,11 @@ def create_cumulative_chart_mobile(df_month):
             )
         ).encode(
             x=alt.X("Dia:O", 
-                   axis=alt.Axis(title="Dia do Mês", labelAngle=0, labelColor="#94a3b8", 
-                                titleColor="#94a3b8", gridColor="#334155")),
+                   axis=alt.Axis(title="Dia do Mês", labelAngle=0, labelColor="#cbd5e1", 
+                                titleColor="#f1f5f9", gridColor="#475569")),
             y=alt.Y("Total_Acumulado:Q", 
-                   axis=alt.Axis(title="Acumulado (R$)", labelColor="#94a3b8", 
-                                titleColor="#94a3b8", gridColor="#334155")),
+                   axis=alt.Axis(title="Acumulado (R$)", labelColor="#cbd5e1", 
+                                titleColor="#f1f5f9", gridColor="#475569")),
             tooltip=[
                 alt.Tooltip("Data:T", title="Data", format="%d/%m/%Y"),
                 alt.Tooltip("Total:Q", title="Venda Dia (R$)", format=",.2f"),
@@ -482,7 +692,7 @@ def create_cumulative_chart_mobile(df_month):
             ]
         ).properties(
             height=300,
-            title=alt.TitleParams(text="Vendas Acumuladas do Mês", color="#cbd5e1")
+            title=alt.TitleParams(text="Vendas Acumuladas do Mês", color="#f1f5f9")
         ).configure_view(
             stroke=None
         ).configure(
@@ -494,7 +704,7 @@ def create_cumulative_chart_mobile(df_month):
         return None
 
 def create_daily_sales_chart_mobile(df_month):
-    """Gráfico de barras de vendas diárias para o mês selecionado - COM TEXTOS E STROKE 5."""
+    """Gráfico de barras de vendas diárias para o mês selecionado."""
     try:
         if df_month.empty:
             return None
@@ -502,22 +712,22 @@ def create_daily_sales_chart_mobile(df_month):
         chart = alt.Chart(df_month).mark_bar(
             color=CORES_MODO_ESCURO[1], 
             size=15,
-            stroke='#334155',  # Cor da borda das barras
-            strokeWidth=5      # Largura da borda = 5
+            stroke='#475569',
+            strokeWidth=5
         ).encode(
             x=alt.X("Dia:O", 
-                   axis=alt.Axis(title="Dia do Mês", labelAngle=0, labelColor="#94a3b8", 
-                                titleColor="#94a3b8", gridColor="#334155")),
+                   axis=alt.Axis(title="Dia do Mês", labelAngle=0, labelColor="#cbd5e1", 
+                                titleColor="#f1f5f9", gridColor="#475569")),
             y=alt.Y("Total:Q", 
-                   axis=alt.Axis(title="Venda Diária (R$)", labelColor="#94a3b8", 
-                                titleColor="#94a3b8", gridColor="#334155")),
+                   axis=alt.Axis(title="Venda Diária (R$)", labelColor="#cbd5e1", 
+                                titleColor="#f1f5f9", gridColor="#475569")),
             tooltip=[
                 alt.Tooltip("Data:T", title="Data", format="%d/%m/%Y"),
                 alt.Tooltip("Total:Q", title="Venda (R$)", format=",.2f")
             ]
         ).properties(
             height=300,
-            title=alt.TitleParams(text="Vendas Diárias", color="#cbd5e1")
+            title=alt.TitleParams(text="Vendas Diárias", color="#f1f5f9")
         ).configure_view(
             stroke=None
         ).configure(
@@ -544,10 +754,22 @@ def main():
         st.warning("Não foi possível carregar os dados da planilha ou ela está vazia.")
         return
 
-    # --- Logo Centralizada com Efeito --- #
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown(f'<img src="{LOGO_URL}" class="centered-logo">', unsafe_allow_html=True)
+    # --- Logo com Animação de Fogo Espetacular --- #
+    st.markdown(f"""
+    <div class="logo-fire-container">
+        <img src="{LOGO_URL}" class="fire-logo" alt="Clips Burger Logo">
+        <div class="fire-container">
+            <div class="flame flame-red"></div>
+            <div class="flame flame-orange"></div>
+            <div class="flame flame-yellow"></div>
+            <div class="flame flame-white"></div>
+            <div class="fire-particle"></div>
+            <div class="fire-particle"></div>
+            <div class="fire-particle"></div>
+            <div class="fire-particle"></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # --- Filtros de Mês e Ano --- #
     anos_disponiveis = sorted(df_all["Ano"].unique(), reverse=True)
@@ -659,7 +881,7 @@ def main():
     if not df_filtered_month.empty:
         # Verificar se há dados suficientes para gráficos
         if len(df_filtered_month) > 0:
-            # Heatmap estilo GitHub mensal (CORES CINZA/VERDE COM TEXTOS E STROKE 5)
+            # Heatmap estilo GitHub mensal
             heatmap_chart = create_monthly_activity_heatmap(df_filtered_month, mes_selecionado_nome, ano_selecionado)
             if heatmap_chart:
                 st.altair_chart(heatmap_chart, use_container_width=True)

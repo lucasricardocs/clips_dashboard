@@ -67,7 +67,7 @@ def inject_mobile_dark_css():
             margin-left: auto;
             margin-right: auto;
             margin-bottom: 1.5rem; /* Espaçamento abaixo da logo */
-            max-width: 150px; /* Ajuste o tamanho máximo da logo se necessário */
+            max-width: 50px; /* Ajuste o tamanho máximo da logo se necessário */
         }
 
         /* Títulos H2 */

@@ -3,7 +3,7 @@ import gspread
 import pandas as pd
 import altair as alt
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from google.oauth2.service_account import Credentials
 from gspread.exceptions import SpreadsheetNotFound
 import warnings
@@ -14,7 +14,8 @@ warnings.filterwarnings("ignore", category=FutureWarning, message=".*observed=Fa
 # --- Configurações Globais e Constantes ---
 SPREADSHEET_ID = "1NTScbiIna-iE7roQ9XBdjUOssRihTFFby4INAAQNXTg" # Use o ID da sua planilha
 WORKSHEET_NAME = "Vendas" # Nome da aba na planilha
-LOGO_URL = "https://raw.githubusercontent.com/lucasricardocs/clipsburger/refs/heads/main/logo.png"
+# LOGO_URL original: "https://raw.githubusercontent.com/lucasricardocs/clipsburger/refs/heads/main/logo.png"
+LOGO_URL = "https://raw.githubusercontent.com/lucasricardocs/clips_dashboard/main/logo.png" # URL Raw da nova logo
 
 # Configuração da página Streamlit
 st.set_page_config(
@@ -32,6 +33,7 @@ CORES_MODO_ESCURO = ["#4c78a8", "#54a24b", "#f58518", "#e45756", "#72b7b2", "#ff
 
 # Ordem dos meses
 meses_ordem = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+meses_dict = {nome: i+1 for i, nome in enumerate(meses_ordem)}
 
 # --- CSS Customizado para App-Like Mobile Dark --- #
 def inject_mobile_dark_css():
@@ -59,13 +61,16 @@ def inject_mobile_dark_css():
             max-width: 100%; /* Ocupar toda a largura no mobile */
         }
 
-        /* Título */
-        h1 {
-            color: #f8fafc; /* Tailwind Slate 50 */
-            font-size: 1.5rem; /* Tamanho adequado para mobile */
-            text-align: center;
-            margin-bottom: 1.5rem;
+        /* Centralizar Logo */
+        div.block-container img {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 1.5rem; /* Espaçamento abaixo da logo */
+            max-width: 150px; /* Ajuste o tamanho máximo da logo se necessário */
         }
+
+        /* Títulos H2 */
         h2 {
             color: #cbd5e1; /* Tailwind Slate 300 */
             font-size: 1.2rem;
@@ -90,7 +95,7 @@ def inject_mobile_dark_css():
         }
         .stMetric > div[data-testid="stMetricValue"] {
             color: #f1f5f9; /* Tailwind Slate 100 */
-            font-size: 2rem; /* Valor destacado */
+            font-size: 1.8rem; /* Ajuste leve no tamanho para caber melhor */
             font-weight: 600;
             line-height: 1.2;
         }
@@ -144,6 +149,27 @@ def inject_mobile_dark_css():
             display: none;
         }
 
+        /* Tabela de Vendas Diárias */
+        .stDataFrame {
+            background-color: #1e293b; /* Fundo da tabela */
+            border-radius: 0.75rem;
+            border: 1px solid #334155;
+            margin-top: 1rem;
+        }
+        .stDataFrame thead th {
+            background-color: #334155; /* Fundo do cabeçalho */
+            color: #e2e8f0; /* Texto do cabeçalho */
+        }
+        .stDataFrame tbody tr:nth-child(even) {
+            background-color: #1e293b; /* Cor linha par */
+        }
+        .stDataFrame tbody tr:nth-child(odd) {
+            background-color: #283447; /* Cor linha ímpar (ligeiramente diferente) */
+        }
+        .stDataFrame tbody td {
+            color: #e2e8f0; /* Cor do texto da célula */
+        }
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -155,7 +181,6 @@ def get_google_auth():
     """Autoriza o acesso ao Google Sheets."""
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
     try:
-        # Tenta carregar do st.secrets primeiro
         if "google_credentials" in st.secrets:
             credentials_dict = st.secrets["google_credentials"]
             if credentials_dict:
@@ -163,11 +188,8 @@ def get_google_auth():
                 return gspread.authorize(creds)
             else:
                 st.warning("Credenciais do Google em st.secrets estão vazias. Tentando carregar de 'credentials.json'.")
-
-        # Fallback para arquivo local
         try:
             creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
-            # st.info("Credenciais carregadas de 'credentials.json'.")
             return gspread.authorize(creds)
         except FileNotFoundError:
             st.error("Erro: Arquivo 'credentials.json' não encontrado E credenciais não configuradas em st.secrets.")
@@ -176,7 +198,6 @@ def get_google_auth():
         except Exception as e_file:
             st.error(f"Erro ao carregar 'credentials.json': {e_file}")
             return None
-
     except Exception as e_auth:
         st.error(f"Erro geral de autenticação com Google: {e_auth}")
         return None
@@ -207,9 +228,7 @@ def read_sales_data(_gc):
             return pd.DataFrame()
 
         try:
-            # Tenta formato brasileiro primeiro
             df["Data"] = pd.to_datetime(df["Data"], format="%d/%m/%Y", errors="coerce")
-            # Se falhar, tenta formato padrão
             if df["Data"].isnull().any():
                 df["Data"] = pd.to_datetime(df["Data"], errors="coerce")
         except Exception:
@@ -224,6 +243,7 @@ def read_sales_data(_gc):
         df["Mês"] = df["Data"].dt.month
         df["Dia"] = df["Data"].dt.day
         df["MêsNome"] = df["Mês"].apply(lambda x: meses_ordem[int(x)-1] if pd.notna(x) and 1 <= int(x) <= 12 else "Inválido")
+        df["DiaSemana"] = df["Data"].dt.dayofweek # 0 = Segunda, 6 = Domingo
 
         return df.sort_values("Data") # Ordena por data
 
@@ -236,19 +256,17 @@ def read_sales_data(_gc):
 
 # --- Funções de Gráficos (Otimizadas para Mobile) --- #
 def create_cumulative_chart_mobile(df_month):
-    """Gráfico de área acumulado para o mês atual."""
+    """Gráfico de área acumulado para o mês selecionado."""
     if df_month.empty:
         return None
-
-    df_month = df_month.copy()
+    df_month = df_month.copy().sort_values("Dia")
     df_month["Total_Acumulado"] = df_month["Total"].cumsum()
-
     chart = alt.Chart(df_month).mark_area(
         interpolate="monotone",
         line={"color": CORES_MODO_ESCURO[0], "strokeWidth": 2},
         color=alt.Gradient(
             gradient="linear",
-            stops=[alt.GradientStop(color=CORES_MODO_ESCURO[0], offset=0), alt.GradientStop(color="#1e293b", offset=1)], # Gradiente para fundo escuro
+            stops=[alt.GradientStop(color=CORES_MODO_ESCURO[0], offset=0), alt.GradientStop(color="#1e293b", offset=1)],
             x1=1, x2=1, y1=1, y2=0
         )
     ).encode(
@@ -259,21 +277,15 @@ def create_cumulative_chart_mobile(df_month):
             alt.Tooltip("Total:Q", title="Venda Dia (R$)", format=",.2f"),
             alt.Tooltip("Total_Acumulado:Q", title="Acumulado (R$)", format=",.2f")
         ]
-    ).properties(
-        height=350, # Altura menor para mobile
-        # title=alt.TitleParams("Evolução Acumulada no Mês", anchor="start", color="#e2e8f0", dy=-15)
-    ).configure_view(stroke=None).configure(background="transparent") # Fundo transparente
-
+    ).properties(height=300).configure_view(stroke=None).configure(background="transparent")
     return chart
 
 def create_daily_sales_chart_mobile(df_month):
-    """Gráfico de barras de vendas diárias para o mês atual."""
+    """Gráfico de barras de vendas diárias para o mês selecionado."""
     if df_month.empty:
         return None
-
     chart = alt.Chart(df_month).mark_bar(
-        color=CORES_MODO_ESCURO[1], # Cor verde
-        size=12 # Barras mais finas
+        color=CORES_MODO_ESCURO[1], size=10
     ).encode(
         x=alt.X("Dia:O", axis=alt.Axis(title="Dia do Mês", labelAngle=0, labelColor="#94a3b8", titleColor="#94a3b8", gridColor="#334155")),
         y=alt.Y("Total:Q", axis=alt.Axis(title="Venda Diária (R$)", labelColor="#94a3b8", titleColor="#94a3b8", gridColor="#334155")),
@@ -281,16 +293,12 @@ def create_daily_sales_chart_mobile(df_month):
             alt.Tooltip("Data:T", title="Data", format="%d/%m/%Y"),
             alt.Tooltip("Total:Q", title="Venda (R$)", format=",.2f")
         ]
-    ).properties(
-        height=350, # Altura menor para mobile
-        # title=alt.TitleParams("Vendas Diárias no Mês", anchor="start", color="#e2e8f0", dy=-15)
-    ).configure_view(stroke=None).configure(background="transparent")
-
+    ).properties(height=300).configure_view(stroke=None).configure(background="transparent")
     return chart
 
 # --- Função para formatar moeda --- #
 def format_brl(value):
-    if value is None or not isinstance(value, (int, float)):
+    if pd.isna(value) or not isinstance(value, (int, float)):
         return "R$ 0,00"
     return f"R$ {value:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
 
@@ -302,26 +310,71 @@ def main():
 
     if df_all.empty:
         st.warning("Não foi possível carregar os dados da planilha ou ela está vazia.")
-        return # Para a execução se não houver dados
+        return
 
-    # Determinar ano e mês atuais
-    current_year = datetime.now().year
-    current_month = datetime.now().month
-    current_month_name = meses_ordem[current_month-1]
+    # --- Logo Centralizada --- #
+    st.image(LOGO_URL, use_column_width='auto') # 'auto' ou width em pixels
 
-    # Filtrar dados para o ano e mês atuais
-    df_current_year = df_all[df_all["Ano"] == current_year]
-    df_current_month = df_current_year[df_current_year["Mês"] == current_month]
+    # --- Filtros de Mês e Ano --- #
+    anos_disponiveis = sorted(df_all["Ano"].unique(), reverse=True)
+    meses_disponiveis = meses_ordem
+
+    # Valores padrão: mês e ano atuais
+    ano_atual = datetime.now().year
+    mes_atual_nome = meses_ordem[datetime.now().month - 1]
+
+    # Define o índice padrão para o ano atual (se existir nos dados)
+    try:
+        default_year_index = anos_disponiveis.index(ano_atual)
+    except ValueError:
+        default_year_index = 0 # Usa o ano mais recente se o atual não estiver nos dados
+
+    # Define o índice padrão para o mês atual
+    default_month_index = meses_disponiveis.index(mes_atual_nome)
+
+    col_filtros1, col_filtros2 = st.columns(2)
+    with col_filtros1:
+        ano_selecionado = st.selectbox(
+            "Ano",
+            anos_disponiveis,
+            index=default_year_index
+        )
+    with col_filtros2:
+        mes_selecionado_nome = st.selectbox(
+            "Mês",
+            meses_disponiveis,
+            index=default_month_index
+        )
+
+    mes_selecionado_num = meses_dict[mes_selecionado_nome]
+
+    # Filtrar dados com base na seleção
+    df_filtered_year = df_all[df_all["Ano"] == ano_selecionado]
+    df_filtered_month = df_filtered_year[df_filtered_year["Mês"] == mes_selecionado_num]
+
+    # --- Cálculo Vendas Semana Atual --- #
+    hoje = datetime.now().date()
+    inicio_semana = hoje - timedelta(days=hoje.weekday()) # Segunda-feira
+    fim_semana = inicio_semana + timedelta(days=6) # Domingo
+
+    # Filtrar df_all para a semana atual (considerando apenas a data, sem hora)
+    df_semana_atual = df_all[
+        (df_all['Data'].dt.date >= inicio_semana) &
+        (df_all['Data'].dt.date <= hoje) # Considera até o dia atual
+    ]
+    total_semana_atual = df_semana_atual["Total"].sum()
 
     # --- Layout do Dashboard --- #
-    st.title(f"Dashboard Clips Burger")
 
-    # KPIs do Mês Atual
-    st.header(f"📊 Resumo de {current_month_name} / {current_year}")
-    if not df_current_month.empty:
-        total_month = df_current_month["Total"].sum()
-        avg_daily_month = df_current_month["Total"].mean()
-        days_in_data = df_current_month["Dia"].nunique()
+    # KPI Vendas Semana Atual (em destaque)
+    st.metric(label="💰 Vendas Semana Atual (até hoje)", value=format_brl(total_semana_atual))
+
+    # KPIs do Mês Selecionado
+    st.header(f"📊 Resumo de {mes_selecionado_nome} / {ano_selecionado}")
+    if not df_filtered_month.empty:
+        total_month = df_filtered_month["Total"].sum()
+        avg_daily_month = df_filtered_month["Total"].mean()
+        days_in_data = df_filtered_month["Dia"].nunique()
     else:
         total_month = 0
         avg_daily_month = 0
@@ -333,13 +386,14 @@ def main():
     with kpi_cols[1]:
         st.metric(label="Média Diária no Mês", value=format_brl(avg_daily_month), help=f"Baseado em {days_in_data} dias com vendas no mês.")
 
-    # Resumo Mensal do Ano Vigente
-    st.header(f"🗓️ Faturamento Mensal ({current_year})")
-    if not df_current_year.empty:
-        monthly_revenue = df_current_year.groupby("Mês")["Total"].sum().reset_index()
-        # Adicionar nome do mês e ordenar
+    # Resumo Mensal do Ano Selecionado
+    st.header(f"🗓️ Faturamento Mensal ({ano_selecionado})")
+    if not df_filtered_year.empty:
+        monthly_revenue = df_filtered_year.groupby("Mês")["Total"].sum().reset_index()
         monthly_revenue["MêsNome"] = monthly_revenue["Mês"].apply(lambda x: meses_ordem[int(x)-1] if pd.notna(x) and 1 <= int(x) <= 12 else "Inválido")
-        monthly_revenue = monthly_revenue.sort_values("Mês")
+        monthly_revenue = monthly_revenue.set_index('Mês').reindex(range(1, 13)).reset_index()
+        monthly_revenue['MêsNome'] = monthly_revenue['Mês'].apply(lambda x: meses_ordem[x-1])
+        monthly_revenue['Total'] = monthly_revenue['Total'].fillna(0)
 
         with st.container(border=False):
              st.markdown('<div class="monthly-summary-container">', unsafe_allow_html=True)
@@ -355,26 +409,35 @@ def main():
                  st.markdown('<div class="monthly-summary-item"><span>Nenhum dado para o ano.</span><span></span></div>', unsafe_allow_html=True)
              st.markdown('</div>', unsafe_allow_html=True)
     else:
-        st.info(f"Sem dados de vendas registrados para o ano de {current_year}.")
+        st.info(f"Sem dados de vendas registrados para o ano de {ano_selecionado}.")
 
-    # Gráficos do Mês Atual
-    st.header(f"📈 Gráficos de {current_month_name}")
-    if not df_current_month.empty:
-        # Gráfico Acumulado
-        cumulative_chart = create_cumulative_chart_mobile(df_current_month)
+    # Tabela de Vendas Diárias do Mês Selecionado
+    st.header(f"📋 Vendas Diárias - {mes_selecionado_nome} / {ano_selecionado}")
+    if not df_filtered_month.empty:
+        df_daily_table = df_filtered_month[['Data', 'Total']].copy()
+        df_daily_table['Data'] = df_daily_table['Data'].dt.strftime('%d/%m/%Y')
+        df_daily_table['Total'] = df_daily_table['Total'].apply(format_brl)
+        df_daily_table = df_daily_table.rename(columns={'Data': 'Dia', 'Total': 'Venda Total'})
+        st.dataframe(df_daily_table, use_container_width=True, hide_index=True)
+    else:
+        st.info(f"Sem dados de vendas diárias para {mes_selecionado_nome} de {ano_selecionado}.")
+
+    # Gráficos do Mês Selecionado
+    st.header(f"📈 Gráficos - {mes_selecionado_nome} / {ano_selecionado}")
+    if not df_filtered_month.empty:
+        cumulative_chart = create_cumulative_chart_mobile(df_filtered_month)
         if cumulative_chart:
             st.altair_chart(cumulative_chart, use_container_width=True)
         else:
             st.info("Gráfico acumulado indisponível.")
 
-        # Gráfico Diário
-        daily_chart = create_daily_sales_chart_mobile(df_current_month)
+        daily_chart = create_daily_sales_chart_mobile(df_filtered_month)
         if daily_chart:
             st.altair_chart(daily_chart, use_container_width=True)
         else:
             st.info("Gráfico de vendas diárias indisponível.")
     else:
-        st.info(f"Sem dados de vendas registrados para {current_month_name} de {current_year}.")
+        st.info(f"Sem dados de vendas registrados para {mes_selecionado_nome} de {ano_selecionado}.")
 
 # --- Ponto de Entrada --- #
 if __name__ == "__main__":

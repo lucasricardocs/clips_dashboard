@@ -396,7 +396,7 @@ def main():
         monthly_revenue['Total'] = monthly_revenue['Total'].fillna(0)
 
         with st.container(border=False):
-             st.markdown('<div class="monthly-summary-container">', unsafe_allow_html=True)
+             #st.markdown('<div class="monthly-summary-container">', unsafe_allow_html=True)
              if not monthly_revenue.empty:
                  for _, row in monthly_revenue.iterrows():
                      st.markdown(f"""

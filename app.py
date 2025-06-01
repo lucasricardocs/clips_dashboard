@@ -62,26 +62,31 @@ def inject_enhanced_mobile_css():
             max-width: 100%;
         }
 
-        /* Logo Container com Efeito de Fogo */
+        /* Logo Container com Efeito de Fogo - CORRIGIDO */
         .logo-fire-container {
             position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 2rem 0;
-            height: 250px;
-            overflow: hidden;
+            margin: 2rem auto;
+            height: 280px;  /* Aumentado para acomodar melhor */
+            width: 100%;
+            max-width: 400px;  /* Largura máxima definida */
+            overflow: visible;  /* Mudado para visible */
         }
 
-        /* Logo Principal */
+        /* Logo Principal - CORRIGIDA */
         .fire-logo {
             position: relative;
             z-index: 10;
             max-width: 200px;
-            width: 60%;
-            height: auto;
+            width: auto;  /* Mudado para auto */
+            height: auto;  /* Mantém proporção */
+            object-fit: contain;  /* Garante que a imagem não seja cortada */
             filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.8));
             animation: logoFloat 3s ease-in-out infinite;
+            display: block;
+            margin: 0 auto;
         }
 
         /* Animação de Flutuação da Logo */
@@ -96,15 +101,16 @@ def inject_enhanced_mobile_css():
             }
         }
 
-        /* Container das Chamas */
+        /* Container das Chamas - AJUSTADO */
         .fire-container {
             position: absolute;
-            bottom: -50px;
+            bottom: -30px;  /* Ajustado para não interferir na logo */
             left: 50%;
             transform: translateX(-50%);
             width: 300px;
-            height: 200px;
+            height: 180px;  /* Reduzido ligeiramente */
             z-index: 1;
+            pointer-events: none;  /* Evita interferência */
         }
 
         /* Chamas Individuais */
@@ -216,6 +222,62 @@ def inject_enhanced_mobile_css():
             }
         }
 
+        /* Responsividade melhorada para logo */
+        @media screen and (max-width: 768px) {
+            .logo-fire-container {
+                height: 240px;
+                max-width: 350px;
+            }
+            
+            .fire-logo {
+                max-width: 180px;
+            }
+            
+            .fire-container {
+                width: 250px;
+                height: 150px;
+                bottom: -20px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .logo-fire-container {
+                height: 200px;
+                max-width: 300px;
+                margin: 1rem auto;
+            }
+            
+            .fire-logo {
+                max-width: 150px;
+            }
+            
+            .fire-container {
+                width: 200px;
+                height: 120px;
+                bottom: -15px;
+            }
+            
+            .flame-red {
+                width: 60px;
+                height: 90px;
+            }
+            
+            .flame-orange {
+                width: 45px;
+                height: 70px;
+            }
+            
+            .flame-yellow {
+                width: 30px;
+                height: 50px;
+            }
+            
+            .flame-white {
+                width: 20px;
+                height: 35px;
+            }
+        }
+
         /* Títulos H2 - SEM LINHAS */
         h2 {
             color: #f1f5f9;
@@ -224,7 +286,6 @@ def inject_enhanced_mobile_css():
             margin-top: 2.5rem;
             margin-bottom: 1.5rem;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            /* REMOVIDO: border-bottom */
         }
 
         /* Metric cards melhorados */
@@ -356,39 +417,6 @@ def inject_enhanced_mobile_css():
             color: #f8fafc;
         }
 
-        /* Responsividade melhorada */
-        @media screen and (max-width: 480px) {
-            .fire-logo {
-                max-width: 150px;
-                width: 50%;
-            }
-            
-            .fire-container {
-                width: 250px;
-                height: 150px;
-            }
-            
-            .flame-red {
-                width: 60px;
-                height: 90px;
-            }
-            
-            .flame-orange {
-                width: 45px;
-                height: 70px;
-            }
-            
-            .flame-yellow {
-                width: 30px;
-                height: 50px;
-            }
-            
-            .flame-white {
-                width: 20px;
-                height: 35px;
-            }
-        }
-
     </style>
     """, unsafe_allow_html=True)
 
@@ -473,9 +501,9 @@ def read_sales_data(_gc):
         st.error(f"Erro ao ler ou processar dados da planilha: {e}")
         return pd.DataFrame()
 
-# --- Função para criar heatmap mensal estilo GitHub --- #
+# --- Função para criar heatmap mensal estilo GitHub CORRIGIDA --- #
 def create_monthly_activity_heatmap(df_month, mes_nome, ano):
-    """Cria um heatmap estilo GitHub para o mês selecionado."""
+    """Cria um heatmap estilo GitHub para o mês selecionado - CORRIGIDO PARA VCONCAT."""
     if df_month.empty or 'Data' not in df_month.columns or 'Total' not in df_month.columns:
         return None
     
@@ -555,7 +583,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         ).reset_index()
         week_labels['week_label'] = 'S' + (week_labels['week_corrected'] + 1).astype(str)
 
-        # Labels das semanas
+        # Labels das semanas - SEM CONFIGURAÇÕES
         weeks_chart = alt.Chart(week_labels).mark_text(
             align='center',
             baseline='bottom',
@@ -588,7 +616,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         else:
             domain_values = [0.01, max_value * 0.25, max_value * 0.5, max_value * 0.75]
 
-        # Heatmap principal
+        # Heatmap principal - SEM CONFIGURAÇÕES
         heatmap = alt.Chart(full_df).mark_rect(
             stroke='#475569',
             strokeWidth=5,
@@ -634,21 +662,19 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
                 color='#f1f5f9',
                 fontSize=14
             )
-        ).configure_view(
-            stroke=None
-        ).configure(
-            background='transparent'
         )
 
-        # Combinar gráficos
+        # Combinar gráficos - APLICAR CONFIGURAÇÕES AQUI
         final_chart = alt.vconcat(
             weeks_chart,
             heatmap,
             spacing=5
+        ).resolve_scale(
+            color='independent'
         ).configure_view(
-            strokeWidth=0
+            strokeWidth=0  # Configuração aplicada no nível superior
         ).configure(
-            background='transparent'
+            background='transparent'  # Configuração aplicada no nível superior
         )
 
         return final_chart
@@ -881,7 +907,7 @@ def main():
     if not df_filtered_month.empty:
         # Verificar se há dados suficientes para gráficos
         if len(df_filtered_month) > 0:
-            # Heatmap estilo GitHub mensal
+            # Heatmap estilo GitHub mensal (CORRIGIDO)
             heatmap_chart = create_monthly_activity_heatmap(df_filtered_month, mes_selecionado_nome, ano_selecionado)
             if heatmap_chart:
                 st.altair_chart(heatmap_chart, use_container_width=True)

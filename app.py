@@ -656,7 +656,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
             tooltip=tooltip_fields
         ).properties(
             height=180,
-            width=350,
+            width=450,
             title=alt.TitleParams(
                 text=f'Calendário de Vendas - {mes_nome} {ano}',
                 color='#f1f5f9',

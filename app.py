@@ -169,22 +169,56 @@ def inject_enhanced_mobile_css():
             animation-delay: 0.1s;
         }
 
-        /* Partículas de Fogo */
+        /* Partículas de Fogo - EXPANDIDO */
         .fire-particle {
             position: absolute;
-            width: 4px;
-            height: 4px;
-            background: #ff6347;
             border-radius: 50%;
-            animation: particle-rise 2s linear infinite;
+            animation: particle-rise linear infinite;
+            pointer-events: none;
         }
 
-        .fire-particle:nth-child(1) { left: 20%; animation-delay: 0s; }
-        .fire-particle:nth-child(2) { left: 40%; animation-delay: 0.5s; }
-        .fire-particle:nth-child(3) { left: 60%; animation-delay: 1s; }
-        .fire-particle:nth-child(4) { left: 80%; animation-delay: 1.5s; }
+        /* Partículas Pequenas (Faíscas) */
+        .fire-particle.small {
+            width: 3px;
+            height: 3px;
+            background: radial-gradient(circle, #ff6347 0%, #ff4500 100%);
+            box-shadow: 0 0 6px #ff6347;
+        }
 
-        /* Animação das Chamas */
+        /* Partículas Médias */
+        .fire-particle.medium {
+            width: 5px;
+            height: 5px;
+            background: radial-gradient(circle, #ffa500 0%, #ff6347 100%);
+            box-shadow: 0 0 8px #ffa500;
+        }
+
+        /* Partículas Grandes */
+        .fire-particle.large {
+            width: 7px;
+            height: 7px;
+            background: radial-gradient(circle, #ffff00 0%, #ffa500 100%);
+            box-shadow: 0 0 10px #ffff00;
+        }
+
+        /* Posicionamento das partículas */
+        .fire-particle:nth-child(5) { left: 15%; animation-delay: 0s; animation-duration: 2.5s; }
+        .fire-particle:nth-child(6) { left: 25%; animation-delay: 0.3s; animation-duration: 2.2s; }
+        .fire-particle:nth-child(7) { left: 35%; animation-delay: 0.6s; animation-duration: 2.8s; }
+        .fire-particle:nth-child(8) { left: 45%; animation-delay: 0.9s; animation-duration: 2.0s; }
+        .fire-particle:nth-child(9) { left: 55%; animation-delay: 1.2s; animation-duration: 2.6s; }
+        .fire-particle:nth-child(10) { left: 65%; animation-delay: 1.5s; animation-duration: 2.3s; }
+        .fire-particle:nth-child(11) { left: 75%; animation-delay: 1.8s; animation-duration: 2.7s; }
+        .fire-particle:nth-child(12) { left: 85%; animation-delay: 2.1s; animation-duration: 2.1s; }
+        .fire-particle:nth-child(13) { left: 20%; animation-delay: 0.4s; animation-duration: 2.4s; }
+        .fire-particle:nth-child(14) { left: 30%; animation-delay: 0.7s; animation-duration: 2.9s; }
+        .fire-particle:nth-child(15) { left: 40%; animation-delay: 1.0s; animation-duration: 2.2s; }
+        .fire-particle:nth-child(16) { left: 50%; animation-delay: 1.3s; animation-duration: 2.5s; }
+        .fire-particle:nth-child(17) { left: 60%; animation-delay: 1.6s; animation-duration: 2.8s; }
+        .fire-particle:nth-child(18) { left: 70%; animation-delay: 1.9s; animation-duration: 2.1s; }
+        .fire-particle:nth-child(19) { left: 80%; animation-delay: 2.2s; animation-duration: 2.6s; }
+
+        /* Animações das Chamas */
         @keyframes flicker {
             0% {
                 transform: translateX(-50%) rotate(-2deg) scaleY(1);
@@ -208,18 +242,57 @@ def inject_enhanced_mobile_css():
             }
         }
 
-        /* Animação das Partículas */
+        /* Animações das Partículas - MELHORADAS */
         @keyframes particle-rise {
             0% {
                 bottom: 0;
                 opacity: 1;
-                transform: translateX(0);
+                transform: translateX(0) scale(1);
+            }
+            25% {
+                opacity: 0.8;
+                transform: translateX(5px) scale(1.1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: translateX(-3px) scale(0.9);
+            }
+            75% {
+                opacity: 0.3;
+                transform: translateX(8px) scale(0.7);
             }
             100% {
-                bottom: 150px;
+                bottom: 200px;
                 opacity: 0;
-                transform: translateX(20px);
+                transform: translateX(15px) scale(0.3);
             }
+        }
+
+        /* Animação alternativa para algumas partículas */
+        @keyframes particle-rise-alt {
+            0% {
+                bottom: 0;
+                opacity: 1;
+                transform: translateX(0) rotate(0deg) scale(1);
+            }
+            30% {
+                opacity: 0.9;
+                transform: translateX(-8px) rotate(45deg) scale(1.2);
+            }
+            60% {
+                opacity: 0.5;
+                transform: translateX(12px) rotate(90deg) scale(0.8);
+            }
+            100% {
+                bottom: 180px;
+                opacity: 0;
+                transform: translateX(-5px) rotate(180deg) scale(0.2);
+            }
+        }
+
+        /* Aplicar animação alternativa a algumas partículas */
+        .fire-particle:nth-child(even) {
+            animation-name: particle-rise-alt;
         }
 
         /* Responsividade melhorada para logo */
@@ -789,10 +862,27 @@ def main():
             <div class="flame flame-orange"></div>
             <div class="flame flame-yellow"></div>
             <div class="flame flame-white"></div>
-            <div class="fire-particle"></div>
-            <div class="fire-particle"></div>
-            <div class="fire-particle"></div>
-            <div class="fire-particle"></div>
+            
+            <!-- Partículas Pequenas -->
+            <div class="fire-particle small"></div>
+            <div class="fire-particle small"></div>
+            <div class="fire-particle small"></div>
+            <div class="fire-particle small"></div>
+            <div class="fire-particle small"></div>
+            
+            <!-- Partículas Médias -->
+            <div class="fire-particle medium"></div>
+            <div class="fire-particle medium"></div>
+            <div class="fire-particle medium"></div>
+            <div class="fire-particle medium"></div>
+            <div class="fire-particle medium"></div>
+            
+            <!-- Partículas Grandes -->
+            <div class="fire-particle large"></div>
+            <div class="fire-particle large"></div>
+            <div class="fire-particle large"></div>
+            <div class="fire-particle large"></div>
+            <div class="fire-particle large"></div>
         </div>
     </div>
     """, unsafe_allow_html=True)

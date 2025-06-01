@@ -176,13 +176,13 @@ def inject_enhanced_mobile_css():
             height: 4px;
             background: #ff6347;
             border-radius: 50%;
-            animation: particle-rise 2s linear infinite;
+            animation: particle-rise 1s linear infinite;
         }
 
         .fire-particle:nth-child(1) { left: 20%; animation-delay: 0s; }
         .fire-particle:nth-child(2) { left: 40%; animation-delay: 0.5s; }
         .fire-particle:nth-child(3) { left: 60%; animation-delay: 1s; }
-        .fire-particle:nth-child(4) { left: 80%; animation-delay: 1.5s; }
+        .fire-particle:nth-child(4) { left: 80%; animation-delay: 2s; }
 
         /* Animação das Chamas */
         @keyframes flicker {

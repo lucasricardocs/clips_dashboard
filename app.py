@@ -752,7 +752,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         week_labels['week_label'] = 'S' + (week_labels['week_corrected'] + 1).astype(str)
 
         # Labels das semanas
-        weeks_chart = alt.Chart(week_labels).mark_text(
+        #weeks_chart = alt.Chart(week_labels).mark_text(
             align='center',
             baseline='bottom',
             fontSize=10,
@@ -885,7 +885,7 @@ def create_cumulative_chart_mobile(df_month):
                 alt.Tooltip("Total_Acumulado:Q", title="Acumulado (R$)", format=",.2f")
             ]
         ).properties(
-            height=300,
+            height=400,
             title=alt.TitleParams(text="Vendas Acumuladas do Mês", color="#f1f5f9")
         ).configure_view(
             stroke=None
@@ -920,7 +920,7 @@ def create_daily_sales_chart_mobile(df_month):
                 alt.Tooltip("Total:Q", title="Venda (R$)", format=",.2f")
             ]
         ).properties(
-            height=300,
+            height=400,
             title=alt.TitleParams(text="Vendas Diárias", color="#f1f5f9")
         ).configure_view(
             stroke=None

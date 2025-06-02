@@ -741,6 +741,27 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         
         # Ordem fixa dos dias
         day_display_names = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+        
+        # Calcular semana
+        full_df['week_corrected'] = ((full_df['Data'] - start_date).dt.days // 7)
+
+        # Criar labels das semanas
+        week_labels = full_df.groupby('week_corrected').agg(
+            start_date=('Data', 'min')
+        ).reset_index()
+        week_labels['week_label'] = 'S' + (week_labels['week_corrected'] + 1).astype(str)
+
+        # Labels das semanas
+        weeks_chart = alt.Chart(week_labels).mark_text(
+            align='center',
+            baseline='bottom',
+            fontSize=10,
+            dy=-5,
+            color='#cbd5e1'
+        ).encode(
+            x=alt.X('week_corrected:O', axis=None),
+            text='week_label:N'
+        )
 
         # Tooltip
         tooltip_fields = [

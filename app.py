@@ -35,7 +35,7 @@ CORES_MODO_ESCURO = ["#4c78a8", "#54a24b", "#f58518", "#e45756", "#72b7b2", "#ff
 meses_ordem = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 meses_dict = {nome: i+1 for i, nome in enumerate(meses_ordem)}
 
-# --- CSS Customizado Melhorado com Animação de Fogo --- #
+# --- CSS Customizado Melhorado com Animação de Fogo ---
 def inject_enhanced_mobile_css():
     st.markdown("""
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -63,9 +63,6 @@ def inject_enhanced_mobile_css():
         }
 
         /* Logo Container com Efeito de Fogo */
-        # CSS da logo animada (integrado)
-        fire_logo_css = """
-        /* Logo Container com Efeito de Fogo */
         .logo-fire-container {
             position: relative;
             display: flex;
@@ -82,18 +79,18 @@ def inject_enhanced_mobile_css():
         /* Logo Principal - Z-INDEX ALTO E ANIMADA */
         .fire-logo {
             position: relative;
-            z-index: 50; /* Z-index ALTO para ficar na frente das partículas */
+            z-index: 50;
             max-width: 200px;
             width: auto;
             height: auto;
             object-fit: contain;
             filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.8));
-            animation: logoFloat 3s ease-in-out infinite; /* ANIMAÇÃO RESTAURADA */
+            animation: logoFloat 3s ease-in-out infinite;
             display: block;
             margin: 0 auto;
         }
         
-        /* Animação de Flutuação da Logo - RESTAURADA */
+        /* Animação de Flutuação da Logo */
         @keyframes logoFloat {
             0%, 100% {
                 transform: translateY(0px) scale(1);
@@ -113,7 +110,7 @@ def inject_enhanced_mobile_css():
             transform: translateX(-50%);
             width: 300px;
             height: 800px;
-            z-index: 1; /* Z-index baixo */
+            z-index: 1;
             pointer-events: none;
             overflow: visible !important;
         }
@@ -125,16 +122,30 @@ def inject_enhanced_mobile_css():
             border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
             transform-origin: center bottom;
             animation: flicker 0.5s ease-in-out infinite alternate;
-            z-index: 10; /* Z-index médio - atrás da logo, na frente das partículas */
+            z-index: 10;
         }
         
-        /* Animação das Chamas - RESTAURADA */
+        /* Animação das Chamas */
         @keyframes flicker {
             0% {
-                transform: scale(1) rotate(-2deg);
+                transform: translateX(-50%) rotate(-2deg) scaleY(1);
+                opacity: 0.8;
+            }
+            25% {
+                transform: translateX(-50%) rotate(1deg) scaleY(1.1);
+                opacity: 0.9;
+            }
+            50% {
+                transform: translateX(-50%) rotate(-1deg) scaleY(0.95);
+                opacity: 1;
+            }
+            75% {
+                transform: translateX(-50%) rotate(2deg) scaleY(1.05);
+                opacity: 0.85;
             }
             100% {
-                transform: scale(1.1) rotate(2deg);
+                transform: translateX(-50%) rotate(-1deg) scaleY(1);
+                opacity: 0.9;
             }
         }
         
@@ -185,18 +196,18 @@ def inject_enhanced_mobile_css():
             animation-delay: 0.1s;
         }
         
-        /* Partículas de Fogo - Z-INDEX BAIXO */
+        /* Partículas de Fogo */
         .fire-particle {
             position: absolute;
             bottom: 0;
             border-radius: 50%;
             animation: particle-rise-high linear infinite;
             pointer-events: none;
-            z-index: 5; /* Z-index BAIXO - atrás da logo */
+            z-index: 5;
             opacity: 1;
         }
         
-        /* Animação das Partículas - Passando Atrás da Logo */
+        /* Animação das Partículas */
         @keyframes particle-rise-high {
             0% {
                 bottom: 0px;
@@ -214,8 +225,8 @@ def inject_enhanced_mobile_css():
                 transform: translateX(calc(var(--random-x, 0) * 0.5)) scale(0.85);
             }
             40% {
-                bottom: 250px; /* Altura da logo - partículas passam atrás */
-                opacity: 0.7; /* Menos opacas quando passam pela logo */
+                bottom: 250px;
+                opacity: 0.7;
                 transform: translateX(calc(var(--random-x, 0) * 0.7)) scale(0.7);
             }
             60% {
@@ -258,7 +269,6 @@ def inject_enhanced_mobile_css():
         }
         
         /* Configuração das Partículas */
-        /* Configuração COMPLETA das Partículas - SEM PARTÍCULAS ESTÁTICAS */
         .fire-particle:nth-child(1) { 
             left: 5%; 
             animation-delay: 0.2s; 
@@ -378,84 +388,6 @@ def inject_enhanced_mobile_css():
             animation-delay: 0.3s; 
             animation-duration: 5.0s;
             --random-x: -13px;
-        }
-
-        
-        /* Animações das Chamas */
-        @keyframes flicker {
-            0% {
-                transform: translateX(-50%) rotate(-2deg) scaleY(1);
-                opacity: 0.8;
-            }
-            25% {
-                transform: translateX(-50%) rotate(1deg) scaleY(1.1);
-                opacity: 0.9;
-            }
-            50% {
-                transform: translateX(-50%) rotate(-1deg) scaleY(0.95);
-                opacity: 1;
-            }
-            75% {
-                transform: translateX(-50%) rotate(2deg) scaleY(1.05);
-                opacity: 0.85;
-            }
-            100% {
-                transform: translateX(-50%) rotate(-1deg) scaleY(1);
-                opacity: 0.9;
-            }
-        }
-
-        /* Animações das Partículas */
-        @keyframes particle-rise {
-            0% {
-                bottom: 0;
-                opacity: 1;
-                transform: translateX(0) scale(1);
-            }
-            25% {
-                opacity: 0.8;
-                transform: translateX(5px) scale(1.1);
-            }
-            50% {
-                opacity: 0.6;
-                transform: translateX(-3px) scale(0.9);
-            }
-            75% {
-                opacity: 0.3;
-                transform: translateX(8px) scale(0.7);
-            }
-            100% {
-                bottom: 200px;
-                opacity: 0;
-                transform: translateX(15px) scale(0.3);
-            }
-        }
-
-        /* Animação alternativa para algumas partículas */
-        @keyframes particle-rise-alt {
-            0% {
-                bottom: 0;
-                opacity: 1;
-                transform: translateX(0) rotate(0deg) scale(1);
-            }
-            30% {
-                opacity: 0.9;
-                transform: translateX(-8px) rotate(45deg) scale(1.2);
-            }
-            60% {
-                opacity: 0.5;
-                transform: translateX(12px) rotate(90deg) scale(0.8);
-            }
-            100% {
-                bottom: 180px;
-                opacity: 0;
-                transform: translateX(-5px) rotate(180deg) scale(0.2);
-            }
-        }
-
-        /* Aplicar animação alternativa a algumas partículas */
-        .fire-particle:nth-child(even) {
-            animation-name: particle-rise-alt;
         }
 
         /* Responsividade melhorada para logo */
@@ -658,7 +590,7 @@ def inject_enhanced_mobile_css():
 
 inject_enhanced_mobile_css()
 
-# --- Funções de Cache e Acesso ao Google Sheets --- #
+# --- Funções de Cache e Acesso ao Google Sheets ---
 @st.cache_resource
 def get_google_auth():
     """Autoriza o acesso ao Google Sheets."""
@@ -737,7 +669,7 @@ def read_sales_data(_gc):
         st.error(f"Erro ao ler ou processar dados da planilha: {e}")
         return pd.DataFrame()
 
-# --- Função para criar heatmap mensal estilo GitHub --- #
+# --- Função para criar heatmap mensal estilo GitHub ---
 def create_monthly_activity_heatmap(df_month, mes_nome, ano):
     """Cria um heatmap estilo GitHub para o mês selecionado."""
     if df_month.empty or 'Data' not in df_month.columns or 'Total' not in df_month.columns:
@@ -768,7 +700,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
             end_date = ultimo_dia
         
         all_dates = pd.date_range(start=start_date, end=end_date, freq='D')
-
+        
         # DataFrame com todas as datas
         full_df = pd.DataFrame({'Data': all_dates})
         
@@ -919,7 +851,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         st.error(f"Erro ao criar heatmap mensal: {e}")
         return None
 
-# --- Funções de Gráficos --- #
+# --- Funções de Gráficos ---
 def create_cumulative_chart_mobile(df_month):
     """Gráfico de área acumulado para o mês selecionado."""
     try:
@@ -1000,13 +932,13 @@ def create_daily_sales_chart_mobile(df_month):
         st.error(f"Erro ao criar gráfico de vendas diárias: {e}")
         return None
 
-# --- Função para formatar moeda --- #
+# --- Função para formatar moeda ---
 def format_brl(value):
     if pd.isna(value) or not isinstance(value, (int, float)):
         return "R$ 0,00"
     return f"R$ {value:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
 
-# --- Aplicação Principal --- #
+# --- Aplicação Principal ---
 def main():
     # Autenticação e Leitura de Dados
     gc = get_google_auth()
@@ -1016,7 +948,7 @@ def main():
         st.warning("Não foi possível carregar os dados da planilha ou ela está vazia.")
         return
 
-    # --- Logo com Animação de Fogo --- #
+    # --- Logo com Animação de Fogo ---
     st.markdown(f"""
     <div class="logo-fire-container">
         <img src="{LOGO_URL}" class="fire-logo" alt="Clips Burger Logo">
@@ -1044,7 +976,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    # --- Filtros de Mês e Ano --- #
+    # --- Filtros de Mês e Ano ---
     anos_disponiveis = sorted(df_all["Ano"].unique(), reverse=True)
     meses_disponiveis = meses_ordem
 
@@ -1079,7 +1011,7 @@ def main():
     df_filtered_year = df_all[df_all["Ano"] == ano_selecionado]
     df_filtered_month = df_filtered_year[df_filtered_year["Mês"] == mes_selecionado_num]
 
-    # --- Cálculo Vendas Semana Atual --- #
+    # --- Cálculo Vendas Semana Atual ---
     hoje = datetime.now().date()
     inicio_semana = hoje - timedelta(days=hoje.weekday())
     fim_semana = inicio_semana + timedelta(days=6)
@@ -1090,7 +1022,7 @@ def main():
     ]
     total_semana_atual = df_semana_atual["Total"].sum()
 
-    # --- Layout do Dashboard --- #
+    # --- Layout do Dashboard ---
 
     # KPI Vendas Semana Atual (em destaque)
     st.metric(label="💰 Vendas Semana Atual (até hoje)", value=format_brl(total_semana_atual))
@@ -1175,6 +1107,6 @@ def main():
     else:
         st.info(f"Sem dados de vendas registrados para {mes_selecionado_nome} de {ano_selecionado}.")
 
-# --- Ponto de Entrada --- #
+# --- Ponto de Entrada ---
 if __name__ == "__main__":
     main()

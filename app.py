@@ -787,11 +787,11 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         # Heatmap principal
         heatmap = alt.Chart(full_df).mark_rect(
             stroke='#475569',
-            strokeWidth=5,
-            cornerRadius=2
+            strokeWidth=3,
+            cornerRadius=3
         ).encode(
             x=alt.X('week_corrected:O',
-                    title="Semanas do Mês", 
+                    title=None, 
                     axis=alt.Axis(
                         labelColor='#cbd5e1',
                         titleColor='#f1f5f9',
@@ -799,7 +799,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
                     )),
             y=alt.Y('day_display_name:N', 
                     sort=day_display_names,
-                    title="Dia da Semana",
+                    title=None,
                     axis=alt.Axis(
                         labelAngle=0, 
                         labelFontSize=11, 
@@ -816,7 +816,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
                     domain=domain_values
                 ),
                 legend=alt.Legend(
-                    title="Vendas (R$)",
+                    title=None,
                     titleColor='#f1f5f9',
                     labelColor='#cbd5e1',
                     orient='bottom'

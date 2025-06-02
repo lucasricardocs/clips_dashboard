@@ -797,14 +797,38 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
                         titleColor='#f1f5f9',
                         grid=False
                     )),
+            y=alt.Y('day_display_name:N', 
+                    sort=day_display_names,
+                    title=None,
+                    axis=alt.Axis(
+                        labelAngle=0, 
+                        labelFontSize=11, 
+                        ticks=False, 
+                        domain=False, 
+                        grid=False, 
+                        labelColor='#cbd5e1',
+                        titleColor='#f1f5f9'
+                    )),
+            color=alt.Color('display_total:Q',
+                scale=alt.Scale(
+                    range=['#e5e7eb', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
+                    type='threshold',
+                    domain=domain_values
+                ),
+                legend=alt.Legend(
+                    title=None,
+                    titleColor='#f1f5f9',
+                    labelColor='#cbd5e1',
+                    orient='bottom'
+                )),
             tooltip=tooltip_fields
-            ).properties(
-                height=180,
-                width=450,
-                title=alt.TitleParams(
-                    text=f'Calendário de Vendas - {mes_nome} {ano}',
-                    color='#f1f5f9',
-                f    ontSize=14
+        ).properties(
+            height=180,
+            width=450,
+            title=alt.TitleParams(
+                text=f'Calendário de Vendas - {mes_nome} {ano}',
+                color='#f1f5f9',
+                fontSize=14
             )
         )
 

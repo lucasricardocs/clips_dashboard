@@ -780,7 +780,7 @@ def create_monthly_activity_heatmap(df_month, mes_nome, ano):
         # Domínio da escala baseado nos dados do mês
         max_value = full_df[full_df['is_current_month']]['Total'].max()
         if pd.isna(max_value) or max_value == 0:
-            domain_values = [0.01, 1000, 2000, 3000]
+            domain_values = [0.01, 1500, 2500, 3000]
         else:
             domain_values = [0.01, max_value * 0.25, max_value * 0.5, max_value * 0.75]
 
